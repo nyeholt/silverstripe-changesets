@@ -20,6 +20,12 @@ STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 OF SUCH DAMAGE.
  
 */
+
+Director::addRules(60, array(
+	'changeset-admin' => 'ChangesetsAdmin',
+));
+
+
 include_once dirname(__FILE__).'/helpers.php';
 
 ?>
