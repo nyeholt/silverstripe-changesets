@@ -41,12 +41,113 @@ class TestChangesets extends SapphireTest
 		$obj = $this->objFromFixture('Page', 'home');
 
 		$obj->Title = "changing home";
-
 		$obj->write();
 
 		// it should have a changeset now
+		$cs1 = $obj->getCurrentChangeset();
+		$this->assertNotNull($cs1);
+		$this->assertEquals("Active", $cs1->Status);
+	}
 
+	public function testCreateNewContent() {
+		$this->logInWithPermission('CMSACCESSCMSMain');
+		// create some content and make a change. When saving, it should be added to the current user's
+		// active changeset
+		$obj = new Page();
+		$obj->Title = "New Page";
+		$obj->write();
+
+		// it should have a changeset now
+		$cs1 = $obj->getCurrentChangeset();
+		$this->assertNull($cs1);
+
+		$obj->Title = "New Page Title";
+		$obj->write();
+		$cs1 = $obj->getCurrentChangeset();
+
+		$this->assertNotNull($cs1);
+		$this->assertEquals(1, $cs1->Items()->Count());
+		$this->assertEquals("Active", $cs1->Status);
+	}
+
+	public function testUpdateChangset() {
 		
+
+		// create some content and make a change. When saving, it should be added to the current user's
+		// active changeset
+		$obj = $this->objFromFixture('Page', 'home');
+
+		$obj->Title = "changing home";
+		$obj->write();
+
+		// it should have a changeset now
+		$cs1 = $obj->getCurrentChangeset();
+		$this->assertNotNull($cs1);
+
+		$obj2 = $this->objFromFixture('Page', 'about');
+		$obj2->Content = "blah";
+		$obj2->write();
+
+		$cs3 = $obj->getCurrentChangeset();
+		$this->assertNotNull($cs3);
+
+		$this->assertEquals($cs3->ID, $cs1->ID);
+		$this->assertEquals(2, $cs3->Items()->Count());
+	}
+
+	public function testGetUserChangset() {
+		$this->logInWithPermission('CMSACCESSCMSMain');
+
+		// create some content and make a change. When saving, it should be added to the current user's
+		// active changeset
+		$obj = $this->objFromFixture('Page', 'home');
+		$obj->Title = "changing home";
+		$obj->write();
+
+		// it should have a changeset now
+		$cs1 = $obj->getCurrentChangeset();
+		$this->assertNotNull($cs1);
+
+		$cs2 = singleton('ChangesetService')->getChangesetForUser();
+		$this->assertNotNull($cs2);
+
+		$this->assertEquals($cs1->ID, $cs2->ID);
+	}
+
+	public function testRevertItemInChangeset() {
+		$this->logInWithPermission('CMSACCESSCMSMain');
+
+		$obj = $this->objFromFixture('Page', 'home');
+		$obj->Title = "Not the homepage";
+		$obj->write();
+
+		$obj2 = $this->objFromFixture('Page', 'about');
+		$obj2->Title = "blah";
+		$obj2->write();
+
+		$cs = singleton('ChangesetService')->getChangesetForUser();
+		$this->assertEquals(2, $cs->Items()->Count());
+
+		// now make sure that the change we have is the correct one
+		$modded = $cs->Items()->First();
+		$this->assertEquals($obj->Title, $modded->Title);
+
+		$cs->revert($modded);
+
+		// now we should only have one item
+		$this->assertEquals(1, $cs->Items()->Count());
+
+		$modded = $cs->Items()->First();
+		$this->assertEquals($obj2->Title, $modded->Title);
+
+		$obj3 = $this->objFromFixture('Page', 'another');
+		$obj3->Title = "fadfsf";
+		$obj3->write();
+
+		$this->assertEquals(2, $cs->Items()->Count());
+
+		$cs->revertAll();
+		$this->assertEquals(0, $cs->Items()->Count());
 	}
 }
 ?>

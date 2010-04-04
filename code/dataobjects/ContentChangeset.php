@@ -50,8 +50,19 @@ class ContentChangeset extends DataObject
 	 * @param SiteTree $object
 	 *			The object to remove
 	 */
-	public function removeFromChangeset(SiteTree $object) {
-		singleton('ChangesetService')->removeFromChangeset($object, $this);
+	public function revert(SiteTree $object) {
+		singleton('ChangesetService')->revertFromChangeset($object, $this);
+	}
+
+	/**
+	 * Reverts all objects that are in this changeset
+	 */
+	public function revertAll() {
+		$service = singleton('ChangesetService');
+		$items = $this->Items();
+		foreach ($items as $object) {
+			$service->revertFromChangeset($object, $this);
+		}
 	}
 }
 ?>

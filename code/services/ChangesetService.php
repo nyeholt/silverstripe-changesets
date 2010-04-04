@@ -120,13 +120,21 @@ class ChangesetService
 	}
 
 	/**
-	 * Remove an object from a changeset
+	 * Revert an object in a changeset. First, the item is removed from the changeset. Then,
+	 * it is reverted to the current public version, or if it is NEW content, revert
 	 *
 	 * @param SiteTree $object
 	 *			The object to remove
 	 */
-	public function removeFromChangeset(SiteTree $object, ContentChangeset $changeset) {
+	public function revertFromChangeset(SiteTree $object, ContentChangeset $changeset) {
 		$changeset->Items()->remove($object);
+
+		if ($object->ExistsOnLive) {
+			$object->doRevertToLive();
+		} else {
+			// we should just delete it then?
+			$object->delete();
+		}
 	}
 }
 ?>

@@ -75,6 +75,15 @@ class ChangesetTrackable extends DataObjectDecorator
 	 * Before writing content, add it into the user's current changeset if it isn't already
 	 */
     public function onBeforeWrite() {
+
+		// We only add content into changesets that exists already - this is because until it exists, it doesn't
+		// have an ID, meaning the relationship can't be created. From a usage standpoint this is okay... not ideal,
+		// but users will always change something about a default created page before wanting it published (it also
+		// means that non-modified default content doesn't get accidentally published...)
+		if (!$this->owner->ID) {
+			return;
+		}
+
 		// first see if it's in an active changeset already
 		$changeset = $this->getCurrentChangeset();
 		if ($changeset) {
@@ -105,6 +114,21 @@ class ChangesetTrackable extends DataObjectDecorator
 	public function canPublish() {
 		$val = $this->publishingViaChangeset ? 1 : 0;
 		return $val;
+	}
+
+	/**
+	 * Can only edit content that's NOT in another person's content changeset
+	 */
+	public function canEdit() {
+		$changeset = $this->getCurrentChangeset();
+		if (!$changeset) {
+			return 1;
+		}
+
+		// check the owner of the changeset
+		if ($changeset->OwnerID != Member::currentUserID()) {
+			return 0;
+		}
 	}
 
 	/**
