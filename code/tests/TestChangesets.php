@@ -120,6 +120,9 @@ class TestChangesets extends SapphireTest
 		$obj = $this->objFromFixture('Page', 'home');
 		$obj->Title = "Not the homepage";
 		$obj->write();
+		$obj->doPublish();
+
+		$this->assertTrue('Published', $obj->Status);
 
 		$obj2 = $this->objFromFixture('Page', 'about');
 		$obj2->Title = "blah";
