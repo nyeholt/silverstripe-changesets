@@ -48,8 +48,8 @@ class ChangesetTrackable extends DataObjectDecorator
 	 * This is called by the changeset service just before it calls 'doPublish'. If this flag isn't set
 	 * then the 'canPublish' check below will return false for this changeset. 
 	 */
-	public function setPublishingViaChangeset() {
-		$this->publishingViaChangeset = true;
+	public function setPublishingViaChangeset($v=true) {
+		$this->publishingViaChangeset = $v;
 	}
 
 	/**
@@ -100,7 +100,7 @@ class ChangesetTrackable extends DataObjectDecorator
 			}
 
 			if ($changeset) {
-				$service->addContentToChangeset($this->owner, $changeset);
+				$changeset->addItem($this->owner);
 			}
 		} catch (Exception $e) {
 			SS_Log::log($e, SS_Log::ERR);
@@ -112,8 +112,7 @@ class ChangesetTrackable extends DataObjectDecorator
 	 * changeset - if it is, then we'll let it go, otherwise we'll prevent publication. 
 	 */
 	public function canPublish() {
-		$val = $this->publishingViaChangeset ? 1 : 0;
-		return $val;
+		return $this->publishingViaChangeset;
 	}
 
 	/**
@@ -133,17 +132,19 @@ class ChangesetTrackable extends DataObjectDecorator
 
 	/**
 	 * After an item is published, lets check to see whether the publication was part of the changeset publication
-	 * process (canPublish flag will be true). If it is NOT true, it means that the publication happened
+	 * process (canPublish flag will be true).
+	 *
+	 * If it is NOT true, it means that the publication happened
 	 * because of something else in the system that we couldn't control (eg an admin could publish). This is okay,
 	 * but we need to make sure that any active changeset for the object is cleaned up. 
 	 */
 	public function onAfterPublish() {
 		// calling the local canpublish, not the object one which checks if the user is admin... 
-		if (!$this->canPublish()) {
+		if (!$this->publishingViaChangeset) {
 			$changeset = $this->owner->getCurrentChangeset();
 			if ($changeset) {
 				// remove this object, which will close the changeset if need be.
-				$changeset->removeFromChangeset($this->owner);
+				$changeset->remove($this->owner);
 			}
 		}
 	}

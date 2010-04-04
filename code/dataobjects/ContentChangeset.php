@@ -33,7 +33,8 @@ class ContentChangeset extends DataObject
 {
 	public static $db = array(
 		'Title' => 'Varchar(64)',
-		'Status' => "Enum('Active,Review,Published','Active')"
+		'Status' => "Enum('Active,Review,Published','Active')",
+		'PublishedDate' => 'SS_Datetime',
 	);
 
 	public static $has_one = array(
@@ -44,6 +45,28 @@ class ContentChangeset extends DataObject
 		'Items' => 'SiteTree',
 	);
 
+
+
+	/**
+	 * Removes an item from a changeset. This typically occurs when a piece of content has been
+	 * forcibly published by an admin user. This is NOT the same as reverting the content - though the consequences
+	 * may be similar (ie the changeset is set to 'inactive'
+	 *
+	 * @param SiteTree $item
+	 */
+	public function remove($object) {
+		$this->Items()->remove($object);
+	}
+
+	/**
+	 * Add an object to the changeset
+	 *
+	 * @param SiteTree $object
+	 */
+	public function addItem($object) {
+		$this->Items()->add($object);
+	}
+
 	/**
 	 * Remove an object from a changeset
 	 *
@@ -51,17 +74,22 @@ class ContentChangeset extends DataObject
 	 *			The object to remove
 	 */
 	public function revert(SiteTree $object) {
-		singleton('ChangesetService')->revertFromChangeset($object, $this);
+		if ($object->ExistsOnLive) {
+			$object->doRevertToLive();
+		} else {
+			// we should just delete it then?
+			$object->delete();
+		}
+		$this->remove($object);
 	}
 
 	/**
 	 * Reverts all objects that are in this changeset
 	 */
 	public function revertAll() {
-		$service = singleton('ChangesetService');
 		$items = $this->Items();
 		foreach ($items as $object) {
-			$service->revertFromChangeset($object, $this);
+			$this->revert($object);
 		}
 	}
 }

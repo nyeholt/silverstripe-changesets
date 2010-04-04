@@ -107,34 +107,15 @@ class ChangesetService
 	 */
 	public function submitChangeset(ContentChangeset $changeset) {
 		
-	}
-
-	/**
-	 * Add some content into a changeset. 
-	 *
-	 * @param SiteTree $object
-	 * @param ContentChangeset $changeset
-	 */
-	public function addContentToChangeset(SiteTree $object, ContentChangeset $changeset) {
-		$changeset->Items()->add($object);
-	}
-
-	/**
-	 * Revert an object in a changeset. First, the item is removed from the changeset. Then,
-	 * it is reverted to the current public version, or if it is NEW content, revert
-	 *
-	 * @param SiteTree $object
-	 *			The object to remove
-	 */
-	public function revertFromChangeset(SiteTree $object, ContentChangeset $changeset) {
-		$changeset->Items()->remove($object);
-
-		if ($object->ExistsOnLive) {
-			$object->doRevertToLive();
-		} else {
-			// we should just delete it then?
-			$object->delete();
+		$items = $changeset->Items();
+		foreach ($items as $item) {
+			$item->setPublishingViaChangeset();
+			$item->doPublish();
 		}
+
+		$changeset->Status = 'Published';
+		$changeset->PublishedDate = date('Y-m-d H:i:s');
+		$changeset->write();
 	}
 }
 ?>

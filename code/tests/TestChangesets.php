@@ -33,8 +33,9 @@ class TestChangesets extends SapphireTest
 		parent::setUp();
 	}
 
+
 	public function testCreateChangset() {
-		$this->logInWithPermission('CMSACCESSCMSMain');
+		$this->logInWithPermission('CMS_ACCESS_CMSMain');
 		
 		// create some content and make a change. When saving, it should be added to the current user's
 		// active changeset
@@ -50,7 +51,7 @@ class TestChangesets extends SapphireTest
 	}
 
 	public function testCreateNewContent() {
-		$this->logInWithPermission('CMSACCESSCMSMain');
+		$this->logInWithPermission('CMS_ACCESS_CMSMain');
 		// create some content and make a change. When saving, it should be added to the current user's
 		// active changeset
 		$obj = new Page();
@@ -96,7 +97,7 @@ class TestChangesets extends SapphireTest
 	}
 
 	public function testGetUserChangset() {
-		$this->logInWithPermission('CMSACCESSCMSMain');
+		$this->logInWithPermission('CMS_ACCESS_CMSMain');
 
 		// create some content and make a change. When saving, it should be added to the current user's
 		// active changeset
@@ -115,14 +116,24 @@ class TestChangesets extends SapphireTest
 	}
 
 	public function testRevertItemInChangeset() {
-		$this->logInWithPermission('CMSACCESSCMSMain');
+		$this->logInWithPermission('CMS_ACCESS_CMSMain');
 
 		$obj = $this->objFromFixture('Page', 'home');
 		$obj->Title = "Not the homepage";
 		$obj->write();
+
+		$this->logInWithPermission('ADMIN');
 		$obj->doPublish();
 
-		$this->assertTrue('Published', $obj->Status);
+		$this->assertEquals('Published', $obj->Status);
+		
+		$this->logInWithPermission('CMS_ACCESS_CMSMain');
+		
+		$obj->Title = "Not the homepage 2";
+		$obj->write();
+
+		// @TODO - this status change should be automatic on changing the object
+		// $this->assertEquals('Saved (Updated)', $obj->Status);
 
 		$obj2 = $this->objFromFixture('Page', 'about');
 		$obj2->Title = "blah";
@@ -136,9 +147,15 @@ class TestChangesets extends SapphireTest
 		$this->assertEquals($obj->Title, $modded->Title);
 
 		$cs->revert($modded);
-
-		// now we should only have one item
+		
+		// should now only have 1 item
 		$this->assertEquals(1, $cs->Items()->Count());
+
+		// that should have rolled it back to the previous version also, so reload and ensure it is
+		// the previous version
+		$obj = DataObject::get_by_id('Page', $obj->ID);
+		$this->assertEquals('Published', $obj->Status);
+		$this->assertEquals("Not the homepage", $obj->Title);
 
 		$modded = $cs->Items()->First();
 		$this->assertEquals($obj2->Title, $modded->Title);
@@ -148,9 +165,64 @@ class TestChangesets extends SapphireTest
 		$obj3->write();
 
 		$this->assertEquals(2, $cs->Items()->Count());
-
+		
 		$cs->revertAll();
 		$this->assertEquals(0, $cs->Items()->Count());
+	}
+
+	public function testCannotPublish() {
+		$this->logInWithPermission('CMS_ACCESS_CMSMain');
+
+		$obj = $this->objFromFixture('Page', 'home');
+		$obj->Title = "Not the homepage";
+		$obj->write();
+		
+		$obj->doPublish();
+
+		// should not be able to publish
+		$this->assertEquals('New page', $obj->Status);
+	}
+
+	public function testSubmitChangeset() {
+		$this->logInWithPermission('CMS_ACCESS_CMSMain');
+
+		$obj = $this->objFromFixture('Page', 'home');
+		$obj->Title = "Not the homepage";
+		$obj->write();
+
+		$obj->doPublish();
+
+		// should not be able to publish
+		$this->assertEquals('New page', $obj->Status);
+
+		$obj2 = $this->objFromFixture('Page', 'about');
+		$obj2->Title = "blah";
+		$obj2->write();
+
+		$cs = singleton('ChangesetService')->getChangesetForUser();
+		$this->assertEquals(2, $cs->Items()->Count());
+
+		singleton('ChangesetService')->submitChangeset($cs);
+
+		$this->assertEquals('Published', $cs->Status);
+
+		foreach ($cs->Items() as $item) {
+			$this->assertEquals('Published', $item->Status);
+		}
+
+		// now make sure that a new changeset is created when i go to edit again
+		$obj->Title = "Not the homepage really";
+		$obj->write();
+		$obj2->Title = "This is actually";
+		$obj2->write();
+
+		$cs2 = singleton('ChangesetService')->getChangesetForUser();
+		$cs3 = singleton('ChangesetService')->getChangesetForContent($obj);
+
+		$this->assertEquals($cs2->ID, $cs3->ID);
+		$this->assertNotEquals($cs->ID, $cs2->ID);
+
+		$this->assertEquals(2, $cs2->Items()->Count());
 	}
 }
 ?>
