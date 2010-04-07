@@ -96,7 +96,7 @@ class ChangesetTrackable extends DataObjectDecorator
 			$changeset = $service->getChangesetForUser();
 
 			if (!$changeset) {
-				$changeset = $service->createChangeset(sprintf(_t('Changesets.DEFAULT_TITLE', 'Changeset Started at %s'), date('Y-m-d H:i:s')));
+				$changeset = $service->createChangeset(sprintf(_t('Changesets.DEFAULT_TITLE', 'Changeset for %s Started at %s'), Member::currentUser()->getTitle(), date('Y-m-d H:i:s')));
 			}
 
 			if ($changeset) {

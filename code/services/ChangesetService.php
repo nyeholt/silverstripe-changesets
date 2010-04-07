@@ -49,12 +49,32 @@ class ChangesetService
 		if (!$member) {
 			$member = Member::currentUser();
 		}
+
 		$changeset = new ContentChangeset();
 		$changeset->Title = $name;
 		$changeset->OwnerID = $member->ID;
 		$changeset->write();
 
 		return $changeset;
+	}
+
+	/**
+	 * Gets a changeset from the DB, if the current user has access to it
+	 *
+	 * @param String $id
+	 */
+	public function getChangeset($id) {
+		$member = Member::currentUser();
+
+		$filter = array(
+			'ID =' => $id
+		);
+
+		if (!$member->HasPerm('ADMIN')) {
+			$filter['OwnerID ='] = $member->ID;
+		}
+
+		return DataObject::get_one('ContentChangeset', db_quote($filter));
 	}
 
 	/**
@@ -79,8 +99,46 @@ class ChangesetService
 		));
 
 		// we just want to get the first changeset
-		$changeset = DataObject::get_one('ContentChangeset', $filter);
+		$changeset = DataObject::get_one('ContentChangeset', $filter, true, "Created ASC");
 		return $changeset;
+	}
+
+	/**
+	 * Gets all the changesets that this user has access to.
+	 *
+	 * Users have access to any changeset they've created, and if they have the "ADMIN" permission, then
+	 * they can also access other users' changesets.
+	 *
+	 * @TODO This should be expanded later to allow users to have permission to some specific changesets (ie when
+	 * dealing with workflow)
+	 *
+	 * @param Member $member
+	 */
+	public function getAvailableChangesets($member = null) {
+		if (!$member) {
+			$member = Member::currentUser();
+		}
+
+		if ($member == null) {
+			throw new Exception("User not logged in");
+		}
+
+		$filter = null;
+
+		if ($member->HasPerm('ADMIN')) {
+			$filter = db_quote(array(
+				'Status =' => 'Active',
+			));
+		} else {
+			$filter = db_quote(array(
+				'Status =' => 'Active',
+				'OwnerID =' => $member->ID,
+			));
+		}
+
+		// we just want to get the first changeset
+		$changesets = DataObject::get('ContentChangeset', $filter, "Created ASC");
+		return $changesets;
 	}
 
 	/**
