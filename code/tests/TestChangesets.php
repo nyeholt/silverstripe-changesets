@@ -67,7 +67,7 @@ class TestChangesets extends SapphireTest
 		$cs1 = $obj->getCurrentChangeset();
 
 		$this->assertNotNull($cs1);
-		$this->assertEquals(1, $cs1->Items()->Count());
+		$this->assertEquals(1, $cs1->Changes()->Count());
 		$this->assertEquals("Active", $cs1->Status);
 	}
 
@@ -93,7 +93,7 @@ class TestChangesets extends SapphireTest
 		$this->assertNotNull($cs3);
 
 		$this->assertEquals($cs3->ID, $cs1->ID);
-		$this->assertEquals(2, $cs3->Items()->Count());
+		$this->assertEquals(2, $cs3->Changes()->Count());
 	}
 
 	public function testGetUserChangset() {
@@ -140,16 +140,16 @@ class TestChangesets extends SapphireTest
 		$obj2->write();
 
 		$cs = singleton('ChangesetService')->getChangesetForUser();
-		$this->assertEquals(2, $cs->Items()->Count());
+		$this->assertEquals(2, $cs->Changes()->Count());
 
 		// now make sure that the change we have is the correct one
-		$modded = $cs->Items()->First();
+		$modded = $cs->Changes()->First();
 		$this->assertEquals($obj->Title, $modded->Title);
 
 		$cs->revert($modded);
 		
 		// should now only have 1 item
-		$this->assertEquals(1, $cs->Items()->Count());
+		$this->assertEquals(1, $cs->Changes()->Count());
 
 		// that should have rolled it back to the previous version also, so reload and ensure it is
 		// the previous version
@@ -157,17 +157,17 @@ class TestChangesets extends SapphireTest
 		$this->assertEquals('Published', $obj->Status);
 		$this->assertEquals("Not the homepage", $obj->Title);
 
-		$modded = $cs->Items()->First();
+		$modded = $cs->Changes()->First();
 		$this->assertEquals($obj2->Title, $modded->Title);
 
 		$obj3 = $this->objFromFixture('Page', 'another');
 		$obj3->Title = "fadfsf";
 		$obj3->write();
 
-		$this->assertEquals(2, $cs->Items()->Count());
+		$this->assertEquals(2, $cs->Changes()->Count());
 		
 		$cs->revertAll();
-		$this->assertEquals(0, $cs->Items()->Count());
+		$this->assertEquals(0, $cs->Changes()->Count());
 	}
 
 	public function testCannotPublish() {
@@ -200,13 +200,13 @@ class TestChangesets extends SapphireTest
 		$obj2->write();
 
 		$cs = singleton('ChangesetService')->getChangesetForUser();
-		$this->assertEquals(2, $cs->Items()->Count());
+		$this->assertEquals(2, $cs->Changes()->Count());
 
-		singleton('ChangesetService')->submitChangeset($cs);
+		$cs->submit();
 
 		$this->assertEquals('Published', $cs->Status);
 
-		foreach ($cs->Items() as $item) {
+		foreach ($cs->Changes() as $item) {
 			$this->assertEquals('Published', $item->Status);
 		}
 
@@ -222,7 +222,7 @@ class TestChangesets extends SapphireTest
 		$this->assertEquals($cs2->ID, $cs3->ID);
 		$this->assertNotEquals($cs->ID, $cs2->ID);
 
-		$this->assertEquals(2, $cs2->Items()->Count());
+		$this->assertEquals(2, $cs2->Changes()->Count());
 	}
 }
 ?>

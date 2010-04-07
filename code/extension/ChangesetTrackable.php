@@ -72,10 +72,44 @@ class ChangesetTrackable extends DataObjectDecorator
 	}
 
 	/**
+	 * Returns a string indicating the type of change that this was
+	 *
+	 * @return String
+	 */
+	public function getChangeType() {
+		if ($this->owner->IsDeletedFromStage && $this->owner->ExistsOnLive) {
+			return "Draft Deleted";
+		}
+
+		if ($this->owner->IsDeletedFromStage && !$this->owner->ExistsOnLive) {
+			return "Deleted";
+		}
+
+		if ($this->owner->Status == "Unpublished") {
+			return "Unpublished";
+		}
+
+
+		if ($this->owner->IsAddedToStage) {
+			return "New";
+		}
+
+		if ($this->owner->IsModifiedOnStage) {
+			return "Edited";
+		}
+	}
+
+	/**
 	 * Before writing content, add it into the user's current changeset if it isn't already
 	 */
     public function onBeforeWrite() {
+		$this->addToChangeset();
+	}
 
+	/**
+	 * Add this item into a particular changeset
+	 */
+	public function addToChangeset() {
 		// We only add content into changesets that exists already - this is because until it exists, it doesn't
 		// have an ID, meaning the relationship can't be created. From a usage standpoint this is okay... not ideal,
 		// but users will always change something about a default created page before wanting it published (it also
@@ -96,7 +130,7 @@ class ChangesetTrackable extends DataObjectDecorator
 			$changeset = $service->getChangesetForUser();
 
 			if (!$changeset) {
-				$changeset = $service->createChangeset(sprintf(_t('Changesets.DEFAULT_TITLE', 'Changeset for %s Started at %s'), Member::currentUser()->getTitle(), date('Y-m-d H:i:s')));
+				$changeset = $service->createChangeset(sprintf(_t('Changesets.DEFAULT_TITLE', '%s started at %s'), Member::currentUser()->getTitle(), date('Y-m-d H:i:s')));
 			}
 
 			if ($changeset) {
@@ -116,9 +150,19 @@ class ChangesetTrackable extends DataObjectDecorator
 	}
 
 	/**
+	 * Cannot directly delete an object from live - it must be deleted from draft, then have the change pushed through
+	 * as part of a changeset submission
+	 */
+	public function canDeleteFromLive() {
+		return $this->publishingViaChangeset;
+	}
+
+	/**
 	 * Can only edit content that's NOT in another person's content changeset
 	 */
 	public function canEdit() {
+		$stage = Versioned::current_stage();
+		
 		$changeset = $this->getCurrentChangeset();
 		if (!$changeset) {
 			return 1;
@@ -147,6 +191,14 @@ class ChangesetTrackable extends DataObjectDecorator
 				$changeset->remove($this->owner);
 			}
 		}
+	}
+
+	/**
+	 * If something is deleted, make sure to track that it has been so that we can unpublish it later also
+	 *
+	 */
+	public function onAfterDelete() {
+		$this->addToChangeset();
 	}
 }
 ?>

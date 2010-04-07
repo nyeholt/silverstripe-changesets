@@ -151,29 +151,15 @@ class ChangesetService
 			'Status =' => 'Active',
 		));
 
+		// Would you believe that this line from Object::prepare_statics causes a segfault
+		// every freaking time, unless I put it here FIRST? OH PHP MUCH LOVE TO YOU
+		if (is_subclass_of('ContentChangeset', 'DataObject')) {}
+
 		$changesets = $object->Changesets($filter);
 
 		if ($changesets) {
 			return $changesets->First();
 		}
-	}
-
-	/**
-	 * Submit changeset to the published site
-	 *
-	 * @param ContentChangeset $changeset
-	 */
-	public function submitChangeset(ContentChangeset $changeset) {
-		
-		$items = $changeset->Items();
-		foreach ($items as $item) {
-			$item->setPublishingViaChangeset();
-			$item->doPublish();
-		}
-
-		$changeset->Status = 'Published';
-		$changeset->PublishedDate = date('Y-m-d H:i:s');
-		$changeset->write();
 	}
 }
 ?>

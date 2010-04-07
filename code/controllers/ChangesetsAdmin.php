@@ -35,6 +35,8 @@ class ChangesetsAdmin extends LeftAndMain
 
 	public static $allowed_actions = array(
 		'showchangeset',
+		'submitall',
+		'revertall'
 	);
 
 	/**
@@ -42,17 +44,6 @@ class ChangesetsAdmin extends LeftAndMain
 	 * @var ChangesetService
 	 */
 	protected $changesetService;
-
-	public function init() {
-		parent::init();
-
-		$this->changesetService = singleton('ChangesetService');
-		Requirements::javascript(CHANGESETS_DIR . '/javascript/ChangesetAdmin.js');
-		$cs = $this->changesetService->getChangesetForUser();
-		if ($cs) {
-			self::$menu_title = self::$menu_title .'(' . $cs->Items()->Count() . ')';
-		}
-	}
 
 	/**
 	 * Get the list of changesets available to this user
@@ -70,6 +61,13 @@ class ChangesetsAdmin extends LeftAndMain
 			$changeset = singleton('ChangesetService')->getChangeset($cid);
 		} else {
 			$changeset = singleton('ChangesetService')->getChangesetForUser();
+			if (!$changeset) {
+				// just get any one
+				$possibles = singleton('ChangesetService')->getAvailableChangesets();
+				if ($possibles) {
+					$changeset = $possibles->First();
+				}
+			}
 		}
 		
 		$form = null;
@@ -94,11 +92,7 @@ class ChangesetsAdmin extends LeftAndMain
 				'LastEdited' => 'SSDatetime->Nice'
 			));
 
-			$table->setFieldFormatting(array(
-				'ChangeType' => '" . $IsDeletedFromStage && $ExistsOnLive ? "Draft Deleted" : ($IsDeletedFromStage && !$ExistsOnLive ? "Deleted" : ($Status == "Unpublished" ? "UnPublished" : ($IsAddedToStage ? "New" : ($IsModifiedOnStage ? "Edited" : ""))))."'
-			));
-
-			$table->setCustomSourceItems($changeset->Items());
+			$table->setCustomSourceItems($changeset->Changes());
 
 			$fields = new FieldSet(
 				new TabSet(	'Root',
@@ -126,6 +120,48 @@ class ChangesetsAdmin extends LeftAndMain
 	 */
 	public function showchangeset() {
 		return $this->renderWith('ChangesetsAdmin_right');
+	}
+
+	/**
+	 * Submits all the items in the currently selected changeset
+	 */
+	public function submitall($params=null, $form=null) {
+		$cid = isset($params['ID']) ? $params['ID'] : null;
+		$changeset = null;
+		if (!$cid) {
+			throw new Exception("Invalid Changeset");
+		}
+
+		$changeset = singleton('ChangesetService')->getChangeset($cid);
+		if ($changeset) {
+			$changeset->submit();
+			FormResponse::status_message(sprintf(_t('Changesets.SUBMITTED_CHANGESET', 'Submitted content in changeset %s'), $changeset->Title), 'good');
+		} else {
+			FormResponse::status_message(sprintf(_t('Changesets.CHANGESET_NOT_FOUND', 'Could not find changeset')), 'bad');
+		}
+
+		return FormResponse::respond();
+	}
+
+	/**
+	 * Revert all edits for a particular changeset
+	 */
+	public function revertall($params=null, $form=null) {
+		$cid = isset($params['ID']) ? $params['ID'] : null;
+		$changeset = null;
+		if (!$cid) {
+			throw new Exception("Invalid Changeset");
+		}
+
+		$changeset = singleton('ChangesetService')->getChangeset($cid);
+		if ($changeset) {
+			$changeset->revertAll();
+			FormResponse::status_message(sprintf(_t('Changesets.REVERTED_ALL', 'Reverted content in changeset %s'), $changeset->Title), 'good');
+		} else {
+			FormResponse::status_message(sprintf(_t('Changesets.CHANGESET_NOT_FOUND', 'Could not find changeset')), 'bad');
+		}
+
+		return FormResponse::respond();
 	}
 }
 ?>

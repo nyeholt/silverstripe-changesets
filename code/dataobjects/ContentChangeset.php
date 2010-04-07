@@ -45,6 +45,28 @@ class ContentChangeset extends DataObject
 		'Items' => 'SiteTree',
 	);
 
+	/**
+	 * Gets all the changes in this changeset
+	 *
+	 * @return ComponentSet
+	 */
+	public function Changes() {
+		$old = Versioned::current_stage();
+
+		// need to do both live and staging...
+		Versioned::reading_stage('Stage');
+		$staged = $this->Items();
+		Versioned::reading_stage('Live');
+		$live = $this->Items();
+
+		// This could probably be a lot faster, but it's late
+		$staged->merge($live);
+		$staged->removeDuplicates();
+
+		Versioned::reading_stage($old);
+
+		return $staged;
+	}
 
 
 	/**
@@ -55,7 +77,7 @@ class ContentChangeset extends DataObject
 	 * @param SiteTree $item
 	 */
 	public function remove($object) {
-		$this->Items()->remove($object);
+		$this->Changes()->remove($object);
 	}
 
 	/**
@@ -64,7 +86,7 @@ class ContentChangeset extends DataObject
 	 * @param SiteTree $object
 	 */
 	public function addItem($object) {
-		$this->Items()->add($object);
+		$this->Changes()->add($object);
 	}
 
 	/**
@@ -74,21 +96,70 @@ class ContentChangeset extends DataObject
 	 *			The object to remove
 	 */
 	public function revert(SiteTree $object) {
-		if ($object->ExistsOnLive) {
-			$object->doRevertToLive();
-		} else {
-			// we should just delete it then?
-			$object->delete();
+		switch ($object->getChangeType()) {
+			case "Draft Deleted": {
+				$object->doRestoreToStage();
+				break;
+			}
+			case "Unpublished": {
+				// republish... ? should never actually get here heh...
+				throw new Exception("HOW TO HERE?");
+				break;
+			}
+			case "Deleted": {
+				break;
+			}
+			case "New":  {
+				$object->delete();
+				break;
+			}
+			case "Edited":
+			default: {
+				$object->doRevertToLive();
+			}
 		}
+
 		$this->remove($object);
 	}
 
+
 	/**
-	 * Reverts all objects that are in this changeset
+	 * Submit changeset to the published site
+	 */
+	public function submit() {
+		$items = $this->Changes();
+		foreach ($items as $item) {
+			$item->setPublishingViaChangeset();
+			switch ($item->getChangeType()) {
+				case "Draft Deleted": {
+					$item->doUnpublish();
+					break;
+				}
+				case "Deleted": {
+					break;
+				}
+				case "New": 
+				case "Edited":
+				default: {
+					$item->doPublish();
+				}
+			}
+		}
+
+		$this->Status = 'Published';
+		$this->PublishedDate = date('Y-m-d H:i:s');
+		$this->write();
+	}
+
+	/**
+	 * Reverts an entire changeset
+	 *
+	 * @param ContentChangeset $changeset
 	 */
 	public function revertAll() {
-		$items = $this->Items();
+		$items = $this->Changes();
 		foreach ($items as $object) {
+
 			$this->revert($object);
 		}
 	}
