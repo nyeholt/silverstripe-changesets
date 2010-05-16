@@ -27,6 +27,4 @@ Director::addRules(60, array(
 
 define('CHANGESETS_DIR', 'changesets');
 
-include_once dirname(__FILE__).'/helpers.php';
-
 ?>

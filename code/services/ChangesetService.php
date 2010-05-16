@@ -74,7 +74,7 @@ class ChangesetService
 			$filter['OwnerID ='] = $member->ID;
 		}
 
-		return DataObject::get_one('ContentChangeset', db_quote($filter));
+		return DataObject::get_one('ContentChangeset', singleton('ChangesetUtils')->quote($filter));
 	}
 
 	/**
@@ -93,7 +93,7 @@ class ChangesetService
 			throw new Exception("User not logged in");
 		}
 
-		$filter = db_quote(array(
+		$filter = singleton('ChangesetUtils')->quote(array(
 			'OwnerID =' => $member->ID,
 			'Status =' => 'Active',
 		));
@@ -126,11 +126,11 @@ class ChangesetService
 		$filter = null;
 
 		if ($member->HasPerm('ADMIN')) {
-			$filter = db_quote(array(
+			$filter = singleton('ChangesetUtils')->quote(array(
 				'Status =' => 'Active',
 			));
 		} else {
-			$filter = db_quote(array(
+			$filter = singleton('ChangesetUtils')->quote(array(
 				'Status =' => 'Active',
 				'OwnerID =' => $member->ID,
 			));
@@ -147,7 +147,7 @@ class ChangesetService
 	 * @param SiteTree $object
 	 */
 	public function getChangesetForContent(SiteTree $object) {
-		$filter = db_quote(array(
+		$filter = singleton('ChangesetUtils')->quote(array(
 			'Status =' => 'Active',
 		));
 
