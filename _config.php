@@ -27,4 +27,6 @@ Director::addRules(60, array(
 
 define('CHANGESETS_DIR', 'changesets');
 
+DataObject::add_extension('SiteTree', 'ChangesetTrackable');
+
 ?>
