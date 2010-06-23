@@ -92,7 +92,7 @@ class ChangesetsAdmin extends LeftAndMain
 				'LastEdited' => 'SSDatetime->Nice'
 			));
 
-			$table->setCustomSourceItems($changeset->Changes());
+			$table->setCustomSourceItems($changeset->getItems());
 
 			$fields = new FieldSet(
 				new TabSet(	'Root',
