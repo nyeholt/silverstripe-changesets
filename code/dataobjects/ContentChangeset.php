@@ -27,6 +27,9 @@ OF SUCH DAMAGE.
  * A changeset is created anytime someone starts editing content. When that content is saved, it is added to the
  * user's current changeset (a new one is created if they don't have one). This allows items to be submitted all at once
  *
+ * When an item is added to a changeset, a representative object (ContentChangesetItem) is added so that we can store
+ * objects of any type in the changeset. 
+ *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
 class ContentChangeset extends DataObject
@@ -41,43 +44,71 @@ class ContentChangeset extends DataObject
 		'Owner' => 'Member',
 	);
 
-    public static $many_many = array(
-		'Items' => 'SiteTree',
+    public static $has_many = array(
+		'ChangesetItems' => 'ContentChangesetItem',
 	);
 
 	/**
-	 * Gets all the changes in this changeset
-	 *
-	 * @return ComponentSet
+	 * We want to first get all our changesetitems and retrieve the objects for those
 	 */
-	public function Changes() {
+	public function getItems() {
 		$old = Versioned::current_stage();
 
-		// need to do both live and staging...
-		Versioned::reading_stage('Stage');
-		$staged = $this->Items();
-		Versioned::reading_stage('Live');
-		$live = $this->Items();
+		$cs = $this->ChangesetItems();
+		$items = new DataObjectSet();
+		foreach ($cs as $record) {
+			// we need to do this query on both Live and Stage because an object may existing
+			// on either area (eg unpublish changes etc)
+			Versioned::reading_stage('Stage');
+			$item = $record->getRealItem();
+			if ($item && $item->ID) {
+				$items->push($item);
+				// have the object, don't need the additional check
+				continue;
+			}
 
-		// This could probably be a lot faster, but it's late
-		$staged->merge($live);
-		$staged->removeDuplicates();
+			Versioned::reading_stage('Live');
+			$item = $record->getRealItem();
+			if ($item && $item->ID) {
+				$items->push($item);
+			}
+		}
 
 		Versioned::reading_stage($old);
 
-		return $staged;
+		return $items;
 	}
 
+
+	/**
+	 * Get the content changeset item for a particular object for THIS changeset
+	 *
+	 * @param ContentChangesetItem $object
+	 */
+	public function changesetItemFor($object) {
+		$filter = singleton('ChangesetUtils')->quote(array(
+			'OtherID =' => $object->ID,
+			'OtherClass =' => $object->class,
+			'ChangesetID =' => $this->ID,
+		));
+
+		$item = DataObject::get_one('ContentChangesetItem', $filter);
+		return $item;
+	}
 
 	/**
 	 * Removes an item from a changeset. This typically occurs when a piece of content has been
 	 * forcibly published by an admin user. This is NOT the same as reverting the content - though the consequences
 	 * may be similar (ie the changeset is set to 'inactive'
-	 *
+	 * 
 	 * @param SiteTree $item
 	 */
 	public function remove($object) {
-		$this->Changes()->remove($object);
+		// find the ChangesetItem
+		if ($item = $this->changesetItemFor($object)) {
+//			$this->ChangesetItems()->remove($item);
+			$item->delete();
+		}
 	}
 
 	/**
@@ -86,7 +117,18 @@ class ContentChangeset extends DataObject
 	 * @param SiteTree $object
 	 */
 	public function addItem($object) {
-		$this->Changes()->add($object);
+		// item is already in the changeset
+		if ($item = $this->changesetItemFor($object)) {
+			return;
+		}
+		if (!$this->ID) {
+			throw new Exception("Changeset doesn't have an ID! $this->Title");
+		}
+		$change = new ContentChangesetItem();
+		$change->OtherID = $object->ID;
+		$change->OtherClass = $object->class;
+		$change->ChangesetID = $this->ID;
+		$change->write();
 	}
 
 	/**
@@ -127,7 +169,7 @@ class ContentChangeset extends DataObject
 	 * Submit changeset to the published site
 	 */
 	public function submit() {
-		$items = $this->Changes();
+		$items = $this->getItems();
 		foreach ($items as $item) {
 			$item->setPublishingViaChangeset();
 			switch ($item->getChangeType()) {
@@ -157,11 +199,9 @@ class ContentChangeset extends DataObject
 	 * @param ContentChangeset $changeset
 	 */
 	public function revertAll() {
-		$items = $this->Changes();
+		$items = $this->getItems();
 		foreach ($items as $object) {
-
 			$this->revert($object);
 		}
 	}
 }
-?>

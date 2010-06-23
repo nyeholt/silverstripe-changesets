@@ -146,19 +146,38 @@ class ChangesetService
 	 *
 	 * @param SiteTree $object
 	 */
-	public function getChangesetForContent(SiteTree $object) {
-		$filter = singleton('ChangesetUtils')->quote(array(
-			'Status =' => 'Active',
-		));
+	public function getChangesetForContent(DataObject $object, $state=null) {
+		$filter = array();
+		if ($state) {
+			$filter['Status ='] = $state;
+			
+		}
 
-		// Would you believe that this line from Object::prepare_statics causes a segfault
-		// every freaking time, unless I put it here FIRST? OH PHP MUCH LOVE TO YOU
-		if (is_subclass_of('ContentChangeset', 'DataObject')) {}
+		$filter['OtherID ='] = $object->ID;
+		$filter['OtherClass ='] = $object->class;
 
-		$changesets = $object->Changesets($filter);
+		$filter = singleton('ChangesetUtils')->quote($filter);
 
-		if ($changesets) {
-			return $changesets->First();
+		$query = new SQLQuery();
+
+		$query->from('ContentChangeset')
+				->innerJoin('ContentChangesetItem', '"ContentChangeset"."ID" = "ChangesetID"')
+				->where($filter);
+
+		$fields = DataObject::database_fields('ContentChangeset');
+		$query->select = array('ID' => '"ContentChangeset"."ID"');
+		foreach ($fields as $k => $v) {
+			$query->select[$k] = "\"ContentChangeset\".\"$k\"";
+		}
+
+		$raw = $query->execute();
+
+
+		$result = $object->buildDataObjectSet($query->execute(), 'DataObjectSet', $query, 'ContentChangeset');
+		$str = $query->sql();
+		
+		if ($result) {
+			return $result->First();
 		}
 	}
 }

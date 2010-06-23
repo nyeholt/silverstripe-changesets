@@ -28,14 +28,6 @@ OF SUCH DAMAGE.
  */
 class ChangesetTrackable extends DataObjectDecorator
 {
-	public function extraStatics() {
-		return array(
-			'belongs_many_many' => array(
-				'Changesets' => 'ContentChangeset'
-			),
-		);
-	}
-
 	/**
 	 *
 	 * @var A temporary flag that says whether we can publish or not
@@ -59,7 +51,7 @@ class ChangesetTrackable extends DataObjectDecorator
 	 */
 	public function getCurrentChangeset() {
 		$service = singleton('ChangesetService');
-		return $service->getChangesetForContent($this->owner);
+		return $service->getChangesetForContent($this->owner, 'Active');
 	}
 
 	/**
@@ -67,8 +59,9 @@ class ChangesetTrackable extends DataObjectDecorator
 	 *
 	 * @return DataObjectSet
 	 */
-	public function getChangesets() {
-
+	public function Changesets() {
+		$service = singleton('ChangesetService');
+		return $service->getChangesetForContent($this->owner);
 	}
 
 	/**
@@ -89,7 +82,6 @@ class ChangesetTrackable extends DataObjectDecorator
 			return "Unpublished";
 		}
 
-
 		if ($this->owner->IsAddedToStage) {
 			return "New";
 		}
@@ -102,7 +94,7 @@ class ChangesetTrackable extends DataObjectDecorator
 	/**
 	 * Before writing content, add it into the user's current changeset if it isn't already
 	 */
-    public function onBeforeWrite() {
+    public function onAfterWrite() {
 		$this->addToChangeset();
 	}
 
@@ -114,7 +106,9 @@ class ChangesetTrackable extends DataObjectDecorator
 		// have an ID, meaning the relationship can't be created. From a usage standpoint this is okay... not ideal,
 		// but users will always change something about a default created page before wanting it published (it also
 		// means that non-modified default content doesn't get accidentally published...)
-		if (!$this->owner->ID) {
+		$oid = $this->owner->ID;
+		$mid = Member::currentUserID();
+		if (!$this->owner->ID || !Member::currentUserID()) {
 			return;
 		}
 
