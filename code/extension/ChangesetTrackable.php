@@ -35,6 +35,10 @@ class ChangesetTrackable extends DataObjectDecorator
 	private $publishingViaChangeset = false;
 
 	/**
+	 */
+	protected $lockedBy = false;
+
+	/**
 	 * An instance method that sets temporarily that this object can be published.
 	 *
 	 * This is called by the changeset service just before it calls 'doPublish'. If this flag isn't set
@@ -42,6 +46,32 @@ class ChangesetTrackable extends DataObjectDecorator
 	 */
 	public function setPublishingViaChangeset($v=true) {
 		$this->publishingViaChangeset = $v;
+	}
+
+	/**
+	 * Indicates who this change set is locked by
+	 */
+	public function lockedBy() {
+		if (is_bool($this->lockedBy)) {
+			$cs = $this->getCurrentChangeset();
+			if ($cs) {
+				$this->lockedBy = $cs->Owner();
+			} else {
+				$this->lockedBy = null;
+			}
+		}
+
+		return $this->lockedBy;
+	}
+
+	/**
+	 * Indicates whether this page can be locked
+	 *
+	 * @return boolean
+	 */
+	public function canBeLocked() {
+		$cs = $this->getCurrentChangeset();
+		return $cs == null;
 	}
 
 	/**
@@ -195,4 +225,3 @@ class ChangesetTrackable extends DataObjectDecorator
 		$this->addToChangeset();
 	}
 }
-?>
