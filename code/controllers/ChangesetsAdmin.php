@@ -46,6 +46,14 @@ class ChangesetsAdmin extends LeftAndMain
 	protected $changesetService;
 
 	/**
+	 * Include required JS stuff
+	 */
+	public function init() {
+		parent::init();
+		Requirements::javascript('changesets/javascript/ChangesetAdmin.js');
+	}
+
+	/**
 	 * Get the list of changesets available to this user
 	 */
 	public function Changesets() {
@@ -75,6 +83,7 @@ class ChangesetsAdmin extends LeftAndMain
 		if ($changeset) {
 			$tableFields = array(
 				"Title" => _t('Changesets.PAGE_TITLE', 'Title'),
+				'ClassName' => _t('Changesets.CONTENT_TYPE', 'Type'),
 				"LastEdited" => _t('Changesets.LAST_EDITED', 'Last Edited'),
 				'ChangeType' => _t('Changesets.CHANGE_TYPE', 'Type of Change')
 			);
@@ -89,11 +98,12 @@ class ChangesetsAdmin extends LeftAndMain
 			$table = new ComplexTableField($this, "Changes", "SiteTree", $tableFields);
 			$table->setParentClass(false);
 			$table->setFieldCasting(array(
-				'LastEdited' => 'SSDatetime->Nice'
+				'LastEdited' => 'SSDatetime->Nice',
 			));
 
-			$table->setCustomSourceItems($changeset->getItems());
-
+			$items = $changeset->getItems();
+			$table->setCustomSourceItems($items);
+			$table->pageSize = $items->Count();
 			$fields = new FieldSet(
 				new TabSet(	'Root',
 					new Tab(_t('Changesets.CHANGESETS', 'Changesets'),
