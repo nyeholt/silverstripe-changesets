@@ -35,6 +35,9 @@ class ChangesetTrackable extends DataObjectDecorator
 	private $publishingViaChangeset = false;
 
 	/**
+	 * Who is this obect locked by?
+	 *
+	 * Cache variable that is set any time this info is needed
 	 */
 	protected $lockedBy = false;
 
@@ -71,7 +74,15 @@ class ChangesetTrackable extends DataObjectDecorator
 	 */
 	public function canBeLocked() {
 		$cs = $this->getCurrentChangeset();
-		return $cs == null;
+		return $cs ? $cs->LockType == 'Shared' : true;
+	}
+
+	/**
+	 * What is the lock applied to this page?
+	 */
+	public function lockType() {
+		$cs = $this->getCurrentChangeset();
+		return $cs ? $cs->LockType : null;
 	}
 
 	/**
@@ -189,6 +200,10 @@ class ChangesetTrackable extends DataObjectDecorator
 		
 		$changeset = $this->getCurrentChangeset();
 		if (!$changeset) {
+			return 1;	// needs to be a 1 for the way ss's extensions work
+		}
+
+		if ($changeset->LockType == 'Shared') {
 			return 1;
 		}
 

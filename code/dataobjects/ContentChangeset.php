@@ -38,6 +38,7 @@ class ContentChangeset extends DataObject
 		'Title' => 'Varchar(64)',
 		'Status' => "Enum('Active,Review,Published','Active')",
 		'PublishedDate' => 'SS_Datetime',
+		'LockType' => "Enum('Exclusive,Shared','Exclusive')"	// whether a changeset is locked to a single user or not
 	);
 
 	public static $has_one = array(
@@ -106,7 +107,7 @@ class ContentChangeset extends DataObject
 	public function remove($object) {
 		// find the ChangesetItem
 		if ($item = $this->changesetItemFor($object)) {
-//			$this->ChangesetItems()->remove($item);
+			// $this->ChangesetItems()->remove($item);
 			$item->delete();
 		}
 	}
@@ -203,5 +204,13 @@ class ContentChangeset extends DataObject
 		foreach ($items as $object) {
 			$this->revert($object);
 		}
+	}
+
+	public function unlock() {
+		$this->LockType = 'Shared';
+	}
+
+	public function lock() {
+		$this->LockType = 'Exclusive';
 	}
 }
