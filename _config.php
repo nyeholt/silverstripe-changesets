@@ -27,4 +27,5 @@ Director::addRules(60, array(
 
 define('CHANGESETS_DIR', 'changesets');
 
-DataObject::add_extension('SiteTree', 'ChangesetTrackable');
+// Add the following to your _config to enable this module
+// DataObject::add_extension('SiteTree', 'ChangesetTrackable');
