@@ -30,6 +30,9 @@ class TestChangesets extends SapphireTest
 	public function setupOnce() {
 		parent::setupOnce();
 		$this->resetDBSchema();
+
+		// apply the ChangesetTrackable extension
+		DataObject::add_extension('SiteTree', 'ChangesetTrackable');
 	}
 
     public function setUp() {
@@ -159,6 +162,7 @@ class TestChangesets extends SapphireTest
 		$obj2->write();
 
 		$cs = singleton('ChangesetService')->getChangesetForUser();
+		$this->assertNotNull($cs);
 		$this->assertEquals(2, $cs->getItems()->Count());
 
 		// now make sure that the change we have is the correct one
@@ -219,6 +223,7 @@ class TestChangesets extends SapphireTest
 		$obj2->write();
 
 		$cs = singleton('ChangesetService')->getChangesetForUser();
+		$this->assertNotNull($cs);
 		$this->assertEquals(2, $cs->getItems()->Count());
 
 		$cs->submit();
