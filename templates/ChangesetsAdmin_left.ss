@@ -8,7 +8,7 @@
 				<ul>
 					<% control Changesets %>
 					<li id="$ID">
-						<a href="{$BaseHref}admin/changeset-admin/showchangeset/$ID" title="">$Title</a>
+						<a href="admin/changeset-admin/showchangeset/$ID" title="">$Title</a>
 					</li>
 					<!-- all other users' changes-->
 					<% end_control %>

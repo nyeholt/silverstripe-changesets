@@ -28,19 +28,18 @@ OF SUCH DAMAGE.
  */
 class ChangesetTrackable extends DataObjectDecorator
 {
-	public function extraStatics() {
-		return array(
-			'belongs_many_many' => array(
-				'Changesets' => 'ContentChangeset'
-			),
-		);
-	}
-
 	/**
 	 *
 	 * @var A temporary flag that says whether we can publish or not
 	 */
 	private $publishingViaChangeset = false;
+
+	/**
+	 * Who is this obect locked by?
+	 *
+	 * Cache variable that is set any time this info is needed
+	 */
+	protected $lockedBy = false;
 
 	/**
 	 * An instance method that sets temporarily that this object can be published.
@@ -53,13 +52,47 @@ class ChangesetTrackable extends DataObjectDecorator
 	}
 
 	/**
+	 * Indicates who this change set is locked by
+	 */
+	public function lockedBy() {
+		if (is_bool($this->lockedBy)) {
+			$cs = $this->getCurrentChangeset();
+			if ($cs) {
+				$this->lockedBy = $cs->Owner();
+			} else {
+				$this->lockedBy = null;
+			}
+		}
+
+		return $this->lockedBy;
+	}
+
+	/**
+	 * Indicates whether this page can be locked
+	 *
+	 * @return boolean
+	 */
+	public function canBeLocked() {
+		$cs = $this->getCurrentChangeset();
+		return $cs ? $cs->LockType == 'Shared' : true;
+	}
+
+	/**
+	 * What is the lock applied to this page?
+	 */
+	public function lockType() {
+		$cs = $this->getCurrentChangeset();
+		return $cs ? $cs->LockType : null;
+	}
+
+	/**
 	 * Get the current changeset that this is associated with
 	 *
 	 * @return ContentChangeset
 	 */
 	public function getCurrentChangeset() {
 		$service = singleton('ChangesetService');
-		return $service->getChangesetForContent($this->owner);
+		return $service->getChangesetForContent($this->owner, 'Active');
 	}
 
 	/**
@@ -67,8 +100,9 @@ class ChangesetTrackable extends DataObjectDecorator
 	 *
 	 * @return DataObjectSet
 	 */
-	public function getChangesets() {
-
+	public function Changesets() {
+		$service = singleton('ChangesetService');
+		return $service->getChangesetForContent($this->owner);
 	}
 
 	/**
@@ -89,7 +123,6 @@ class ChangesetTrackable extends DataObjectDecorator
 			return "Unpublished";
 		}
 
-
 		if ($this->owner->IsAddedToStage) {
 			return "New";
 		}
@@ -102,7 +135,7 @@ class ChangesetTrackable extends DataObjectDecorator
 	/**
 	 * Before writing content, add it into the user's current changeset if it isn't already
 	 */
-    public function onBeforeWrite() {
+    public function onAfterWrite() {
 		$this->addToChangeset();
 	}
 
@@ -114,7 +147,9 @@ class ChangesetTrackable extends DataObjectDecorator
 		// have an ID, meaning the relationship can't be created. From a usage standpoint this is okay... not ideal,
 		// but users will always change something about a default created page before wanting it published (it also
 		// means that non-modified default content doesn't get accidentally published...)
-		if (!$this->owner->ID) {
+		$oid = $this->owner->ID;
+		$mid = Member::currentUserID();
+		if (!$this->owner->ID || !Member::currentUserID()) {
 			return;
 		}
 
@@ -165,6 +200,10 @@ class ChangesetTrackable extends DataObjectDecorator
 		
 		$changeset = $this->getCurrentChangeset();
 		if (!$changeset) {
+			return 1;	// needs to be a 1 for the way ss's extensions work
+		}
+
+		if ($changeset->LockType == 'Shared') {
 			return 1;
 		}
 
@@ -201,4 +240,3 @@ class ChangesetTrackable extends DataObjectDecorator
 		$this->addToChangeset();
 	}
 }
-?>
