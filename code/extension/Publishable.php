@@ -50,6 +50,10 @@ class Publishable extends DataObjectDecorator {
 
 		$class = $this->owner->class;
 		$ownerId = $this->owner->ID;
+
+		$dataClasses = ClassInfo::dataClassesFor($class);
+		$class = $dataClasses[count($dataClasses) - 1];
+		
 		$original = Versioned::get_one_by_stage("$class", "Live", "\"$class\".\"ID\" = $ownerId");
 		if(!$original) $original = new $class();
 
