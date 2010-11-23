@@ -77,7 +77,7 @@ class ChangesetsAdmin extends LeftAndMain
 				}
 			}
 		}
-		
+
 		$form = null;
 
 		if ($changeset) {

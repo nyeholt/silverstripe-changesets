@@ -82,6 +82,22 @@ class Publishable extends DataObjectDecorator {
 
 		return true;
 	}
+	
+	function doUnpublish() {
+		if(!$this->canPublish()) return false;
+		if(!$this->owner->ID) return false;
+		
+		$origStage = Versioned::current_stage();
+		Versioned::reading_stage('Live');
+
+		// This way our ID won't be unset
+		$clone = clone $this->owner;
+		$clone->delete();
+
+		Versioned::reading_stage($origStage);
+
+		return true;
+	}
 
 
 	/**
