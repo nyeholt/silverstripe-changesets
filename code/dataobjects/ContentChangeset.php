@@ -1,24 +1,4 @@
 <?php
-/*
-
-Copyright (c) 2009, SilverStripe Australia PTY LTD - www.silverstripe.com.au
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software
-      without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
-OF SUCH DAMAGE.
-*/
 
 /**
  * A dataobject that represents a changeset of pages in the system (ideally we'll support other content types, but
@@ -32,22 +12,29 @@ OF SUCH DAMAGE.
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
-class ContentChangeset extends DataObject
-{
+class ContentChangeset extends DataObject {
+
 	public static $db = array(
 		'Title' => 'Varchar(64)',
 		'Status' => "Enum('Active,Review,Published','Active')",
 		'PublishedDate' => 'SS_Datetime',
-		'LockType' => "Enum('Exclusive,Shared','Exclusive')"	// whether a changeset is locked to a single user or not
+		'LockType' => "Enum('Exclusive,Shared','Exclusive')" // whether a changeset is locked to a single user or not
 	);
-
 	public static $has_one = array(
 		'Owner' => 'Member',
 	);
-
-    public static $has_many = array(
+	public static $has_many = array(
 		'ChangesetItems' => 'ContentChangesetItem',
 	);
+	
+	public static $dependencies = array(
+		'ChangesetService' => '%$ChangesetService',
+	);
+	
+	/**
+	 * @var ChangesetService
+	 */
+	public $changesetService;
 
 	/**
 	 * We want to first get all our changesetitems and retrieve the objects for those
@@ -56,7 +43,7 @@ class ContentChangeset extends DataObject
 		$old = Versioned::current_stage();
 
 		$cs = $this->ChangesetItems();
-		$items = new DataObjectSet();
+		$items = new ArrayList();
 		foreach ($cs as $record) {
 			// we need to do this query on both Live and Stage because an object may existing
 			// on either area (eg unpublish changes etc)
@@ -80,7 +67,6 @@ class ContentChangeset extends DataObject
 		return $items;
 	}
 
-
 	/**
 	 * Get the content changeset item for a particular object for THIS changeset
 	 *
@@ -91,9 +77,14 @@ class ContentChangeset extends DataObject
 			'OtherID =' => $object->ID,
 			'OtherClass =' => $object->class,
 			'ChangesetID =' => $this->ID,
-		));
+				));
 
-		$item = DataObject::get_one('ContentChangesetItem', $filter);
+		$filter = array(
+			'OtherID'		=> $object->ID,
+			'OtherClass'	=> $object->class,
+			'ChangesetID'	=> $this->ID
+		);
+		$item = DataList::create('ContentChangesetItem')->filter($filter)->first();
 		return $item;
 	}
 
@@ -125,7 +116,7 @@ class ContentChangeset extends DataObject
 		if (!$this->ID) {
 			throw new Exception("Changeset doesn't have an ID! $this->Title");
 		}
-		$change = new ContentChangesetItem();
+		$change = ContentChangesetItem::create();
 		$change->OtherID = $object->ID;
 		$change->OtherClass = $object->class;
 		$change->ChangesetID = $this->ID;
@@ -136,35 +127,34 @@ class ContentChangeset extends DataObject
 	 * Remove an object from a changeset
 	 *
 	 * @param SiteTree $object
-	 *			The object to remove
+	 * 			The object to remove
 	 */
 	public function revert(SiteTree $object) {
 		switch ($object->getChangeType()) {
 			case "Draft Deleted": {
-				$object->doRestoreToStage();
-				break;
-			}
+					$object->doRestoreToStage();
+					break;
+				}
 			case "Unpublished": {
-				// republish... ? should never actually get here heh...
-				throw new Exception("HOW TO HERE?");
-				break;
-			}
+					// republish... ? should never actually get here heh...
+					throw new Exception("HOW TO HERE?");
+					break;
+				}
 			case "Deleted": {
-				break;
-			}
-			case "New":  {
-				$object->delete();
-				break;
-			}
+					break;
+				}
+			case "New": {
+					$object->delete();
+					break;
+				}
 			case "Edited":
 			default: {
-				$object->doRevertToLive();
-			}
+					$object->doRevertToLive();
+				}
 		}
 
 		$this->remove($object);
 	}
-
 
 	/**
 	 * Submit changeset to the published site
@@ -175,17 +165,17 @@ class ContentChangeset extends DataObject
 			$item->setPublishingViaChangeset();
 			switch ($item->getChangeType()) {
 				case "Draft Deleted": {
-					$item->doUnpublish();
-					break;
-				}
+						$item->doUnpublish();
+						break;
+					}
 				case "Deleted": {
-					break;
-				}
-				case "New": 
+						break;
+					}
+				case "New":
 				case "Edited":
 				default: {
-					$item->doPublish();
-				}
+						$item->doPublish();
+					}
 			}
 		}
 

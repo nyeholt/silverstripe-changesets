@@ -1,24 +1,4 @@
 <?php
-/*
-
-Copyright (c) 2009, SilverStripe Australia PTY LTD - www.silverstripe.com.au
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software
-      without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
-OF SUCH DAMAGE.
-*/
 
 /**
  * A singletone service that manages changesets within the system.
@@ -28,29 +8,22 @@ OF SUCH DAMAGE.
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
-class ChangesetService
-{
-	/**
-	 * Default empty constructor
-	 */
-	public function __construct() {
-
-	}
+class ChangesetService {
 
 	/**
 	 * Create a new changeset for the given member (the current user is used as the default)
 	 *
 	 * @param String $name
-	 *			A name for this changeset, if applicable
+	 * 			A name for this changeset, if applicable
 	 * @return
-	 *			The new changeset object
+	 * 			The new changeset object
 	 */
-    public function createChangeset($name = '', $member = null) {
+	public function createChangeset($name = '', $member = null) {
 		if (!$member) {
 			$member = Member::currentUser();
 		}
 
-		$changeset = new ContentChangeset();
+		$changeset = ContentChangeset::create();
 		$changeset->Title = $name;
 		$changeset->OwnerID = $member->ID;
 		$changeset->write();
@@ -67,14 +40,14 @@ class ChangesetService
 		$member = Member::currentUser();
 
 		$filter = array(
-			'ID =' => $id
+			'ID' => $id
 		);
 
 		if (!$member->HasPerm('ADMIN')) {
-			$filter['OwnerID ='] = $member->ID;
+			$filter['OwnerID'] = $member->ID;
 		}
-
-		return DataObject::get_one('ContentChangeset', singleton('ChangesetUtils')->quote($filter));
+		
+		return DataList::create('ContentChangeset')->filter($filter)->first();
 	}
 
 	/**
@@ -93,13 +66,13 @@ class ChangesetService
 			throw new Exception("User not logged in");
 		}
 
-		$filter = singleton('ChangesetUtils')->quote(array(
-			'OwnerID =' => $member->ID,
-			'Status =' => 'Active',
-		));
+		$filter = array(
+			'OwnerID' => $member->ID,
+			'Status' => 'Active',
+		);
 
 		// we just want to get the first changeset
-		$changeset = DataObject::get_one('ContentChangeset', $filter, true, "Created ASC");
+		$changeset = DataList::create('ContentChangeset')->filter($filter)->first();
 		return $changeset;
 	}
 
@@ -126,18 +99,17 @@ class ChangesetService
 		$filter = null;
 
 		if ($member->HasPerm('ADMIN')) {
-			$filter = singleton('ChangesetUtils')->quote(array(
-				'Status =' => 'Active',
-			));
+			$filter = array(
+				'Status' => 'Active',
+			);
 		} else {
-			$filter = singleton('ChangesetUtils')->quote(array(
-				'Status =' => 'Active',
-				'OwnerID =' => $member->ID,
-			));
+			$filter = array(
+				'Status' => 'Active',
+				'OwnerID' => $member->ID,
+			);
 		}
 
-		// we just want to get the first changeset
-		$changesets = DataObject::get('ContentChangeset', $filter, "Created ASC");
+		$changesets = DataList::create('ContentChangeset')->filter($filter)->sort('Created ASC');
 		return $changesets;
 	}
 
@@ -146,39 +118,45 @@ class ChangesetService
 	 *
 	 * @param SiteTree $object
 	 */
-	public function getChangesetForContent(DataObject $object, $state=null) {
+	public function getChangesetForContent(DataObject $object, $state = null) {
 		$filter = array();
 		if ($state) {
-			$filter['Status ='] = $state;
-			
+			$filter['Status'] = $state;
 		}
 
-		$filter['OtherID ='] = $object->ID;
-		$filter['OtherClass ='] = $object->class;
+		$filter['ChangesetItems.OtherID'] = $object->ID;
+		$filter['ChangesetItems.OtherClass'] = $object->class;
 
-		$filter = singleton('ChangesetUtils')->quote($filter);
-
-		$query = new SQLQuery();
-
-		$query->from('ContentChangeset')
-				->innerJoin('ContentChangesetItem', '"ContentChangeset"."ID" = "ChangesetID"')
-				->where($filter);
-
-		$fields = DataObject::database_fields('ContentChangeset');
-		$query->select = array('ID' => '"ContentChangeset"."ID"');
-		foreach ($fields as $k => $v) {
-			$query->select[$k] = "\"ContentChangeset\".\"$k\"";
-		}
-
-		$raw = $query->execute();
-
-
-		$result = $object->buildDataObjectSet($query->execute(), 'DataObjectSet', $query, 'ContentChangeset');
-		$str = $query->sql();
+		$list = DataList::create('ContentChangeset');
+		$list->filter($filter);
 		
-		if ($result) {
-			return $result->First();
-		}
+		$items = $list->toArray();
+		
+		return $list->first();
+//		
+//		$query = new SQLQuery();
+//
+//		$query->from('ContentChangeset')
+//				->innerJoin('ContentChangesetItem', '"ContentChangeset"."ID" = "ChangesetID"')
+//				->where($filter);
+//
+//		$fields = DataObject::database_fields('ContentChangeset');
+//		$query->select = array('ID' => '"ContentChangeset"."ID"');
+//		foreach ($fields as $k => $v) {
+//			$query->select[$k] = "\"ContentChangeset\".\"$k\"";
+//		}
+//
+//		$raw = $query->execute();
+//
+//
+//		$result = $object->buildDataObjectSet($query->execute(), 'DataObjectSet', $query, 'ContentChangeset');
+//		$str = $query->sql();
+//
+//		if ($result) {
+//			return $result->First();
+//		}
 	}
+
 }
+
 ?>

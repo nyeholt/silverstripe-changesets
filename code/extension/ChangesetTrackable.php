@@ -1,24 +1,4 @@
 <?php
-/*
-
-Copyright (c) 2009, SilverStripe Australia PTY LTD - www.silverstripe.com.au
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-    * Neither the name of SilverStripe nor the names of its contributors may be used to endorse or promote products derived from this software
-      without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
-OF SUCH DAMAGE.
-*/
 
 /**
  * An extension that makes an object's changes trackable in a changeset along with other content that
@@ -26,8 +6,17 @@ OF SUCH DAMAGE.
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
-class ChangesetTrackable extends DataObjectDecorator
-{
+class ChangesetTrackable extends DataObjectDecorator {
+	
+	public static $dependencies = array(
+		'ChangesetService' => '%$ChangesetService'
+	);
+	
+	/**
+	 * @var ContentChangeset
+	 */
+	public $changesetService;
+
 	/**
 	 *
 	 * @var A temporary flag that says whether we can publish or not
@@ -47,7 +36,7 @@ class ChangesetTrackable extends DataObjectDecorator
 	 * This is called by the changeset service just before it calls 'doPublish'. If this flag isn't set
 	 * then the 'canPublish' check below will return false for this changeset. 
 	 */
-	public function setPublishingViaChangeset($v=true) {
+	public function setPublishingViaChangeset($v = true) {
 		$this->publishingViaChangeset = $v;
 	}
 
@@ -91,8 +80,7 @@ class ChangesetTrackable extends DataObjectDecorator
 	 * @return ContentChangeset
 	 */
 	public function getCurrentChangeset() {
-		$service = singleton('ChangesetService');
-		return $service->getChangesetForContent($this->owner, 'Active');
+		return $this->changesetService->getChangesetForContent($this->owner, 'Active');
 	}
 
 	/**
@@ -101,8 +89,7 @@ class ChangesetTrackable extends DataObjectDecorator
 	 * @return DataObjectSet
 	 */
 	public function Changesets() {
-		$service = singleton('ChangesetService');
-		return $service->getChangesetForContent($this->owner);
+		return $this->changesetService->getChangesetForContent($this->owner);
 	}
 
 	/**
@@ -135,7 +122,7 @@ class ChangesetTrackable extends DataObjectDecorator
 	/**
 	 * Before writing content, add it into the user's current changeset if it isn't already
 	 */
-    public function onAfterWrite() {
+	public function onAfterWrite() {
 		$this->addToChangeset();
 	}
 
@@ -162,7 +149,7 @@ class ChangesetTrackable extends DataObjectDecorator
 		// if not, get the current user's changeset
 		$service = singleton('ChangesetService');
 		try {
-			$changeset = $service->getChangesetForUser();
+			$changeset = $this->changesetService->getChangesetForUser();
 
 			if (!$changeset) {
 				$changeset = $service->createChangeset(sprintf(_t('Changesets.DEFAULT_TITLE', '%s started at %s'), Member::currentUser()->getTitle(), date('Y-m-d H:i:s')));
@@ -197,10 +184,10 @@ class ChangesetTrackable extends DataObjectDecorator
 	 */
 	public function canEdit() {
 		$stage = Versioned::current_stage();
-		
+
 		$changeset = $this->getCurrentChangeset();
 		if (!$changeset) {
-			return 1;	// needs to be a 1 for the way ss's extensions work
+			return 1; // needs to be a 1 for the way ss's extensions work
 		}
 
 		if ($changeset->LockType == 'Shared') {
@@ -239,4 +226,5 @@ class ChangesetTrackable extends DataObjectDecorator
 	public function onAfterDelete() {
 		$this->addToChangeset();
 	}
+
 }
