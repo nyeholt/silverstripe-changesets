@@ -1,19 +1,16 @@
-###############################################
-Changesets Module
-###############################################
+# Changesets Module
 
-Maintainer Contact
------------------------------------------------
+## Maintainer Contact
 Marcus Nyeholt
 
 <marcus (at) silverstripe (dot) com (dot) au>
 
-Requirements
------------------------------------------------
-SilverStripe 2.4.x
+## Requirements
 
-Documentation
------------------------------------------------
+SilverStripe 3.0
+Publishable
+
+## Documentation
 
 This module changes the usage mechanism for users from being one of single page
 modifications to instead being multiple page modifications being submitted
@@ -21,12 +18,9 @@ as a single changeset. This can be considered as somewhat similar to how
 a source control management tool such as SVN or Git builds up a changeset
 before the user commits them all at once. 
 
-Quick Usage Overview
------------------------------------------------
+## Quick Usage Overview
 
-API
------------------------------------------------
+## API
 
-Troubleshooting
------------------------------------------------
+## Troubleshooting
 

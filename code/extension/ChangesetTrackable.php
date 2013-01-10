@@ -6,10 +6,10 @@
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
-class ChangesetTrackable extends DataObjectDecorator {
+class ChangesetTrackable extends DataExtension {
 	
 	public static $dependencies = array(
-		'ChangesetService' => '%$ChangesetService'
+		'changesetService' => '%$ChangesetService'
 	);
 	
 	/**
@@ -30,6 +30,10 @@ class ChangesetTrackable extends DataObjectDecorator {
 	 */
 	protected $lockedBy = false;
 
+	
+	public function __construct() {
+		parent::__construct();
+	}
 	/**
 	 * An instance method that sets temporarily that this object can be published.
 	 *
@@ -147,12 +151,11 @@ class ChangesetTrackable extends DataObjectDecorator {
 		}
 
 		// if not, get the current user's changeset
-		$service = singleton('ChangesetService');
 		try {
 			$changeset = $this->changesetService->getChangesetForUser();
 
 			if (!$changeset) {
-				$changeset = $service->createChangeset(sprintf(_t('Changesets.DEFAULT_TITLE', '%s started at %s'), Member::currentUser()->getTitle(), date('Y-m-d H:i:s')));
+				$changeset = $this->changesetService->createChangeset(sprintf(_t('Changesets.DEFAULT_TITLE', '%s started at %s'), Member::currentUser()->getTitle(), date('Y-m-d H:i:s')));
 			}
 
 			if ($changeset) {
@@ -182,7 +185,10 @@ class ChangesetTrackable extends DataObjectDecorator {
 	/**
 	 * Can only edit content that's NOT in another person's content changeset
 	 */
-	public function canEdit() {
+	public function canEdit($member) {
+		if (!$member) {
+			$member = Member::currentUser();
+		}
 		$stage = Versioned::current_stage();
 
 		$changeset = $this->getCurrentChangeset();
@@ -195,7 +201,7 @@ class ChangesetTrackable extends DataObjectDecorator {
 		}
 
 		// check the owner of the changeset
-		if ($changeset->OwnerID != Member::currentUserID()) {
+		if ($changeset->OwnerID != $member->ID) {
 			return 0;
 		}
 	}

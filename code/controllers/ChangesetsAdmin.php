@@ -18,7 +18,7 @@ class ChangesetsAdmin extends ModelAdmin {
 	);
 	
 	public static $dependencies = array(
-		'ChangesetService' => '%$ChangesetService'
+		'changesetService' => '%$ChangesetService'
 	);
 
 	/**

@@ -28,7 +28,7 @@ class ContentChangeset extends DataObject {
 	);
 	
 	public static $dependencies = array(
-		'ChangesetService' => '%$ChangesetService',
+		'changesetService' => '%$ChangesetService',
 	);
 	
 	/**

@@ -9,7 +9,7 @@
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
 class ChangesetService {
-
+	
 	/**
 	 * Create a new changeset for the given member (the current user is used as the default)
 	 *
@@ -124,11 +124,11 @@ class ChangesetService {
 			$filter['Status'] = $state;
 		}
 
-		$filter['ChangesetItems.OtherID'] = $object->ID;
-		$filter['ChangesetItems.OtherClass'] = $object->class;
+		$filter['ChangesetItems.OtherID:ExactMatch'] = $object->ID;
+		$filter['ChangesetItems.OtherClass:ExactMatch'] = $object->class;
 
 		$list = DataList::create('ContentChangeset');
-		$list->filter($filter);
+		$list = $list->filter($filter);
 		
 		$items = $list->toArray();
 		
