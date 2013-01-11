@@ -45,69 +45,26 @@ class ChangesetsAdmin extends ModelAdmin {
 
 	public function EditForm($request = null, $vars = null) {
 		$form = parent::EditForm();
+		$grid = $form->Fields()->dataFieldByName('ContentChangeset');
+		$config = $grid->getConfig();
 		
-		return $form;
+		$config->removeComponentsByType('GridFieldDeleteAction');
+		$config->removeComponentsByType('GridFieldFilterHeader');
+		$config->removeComponentsByType('GridFieldAddNewButton');
+		$config->removeComponentsByType('GridFieldExportButton');
+		$config->removeComponentsByType('GridFieldPrintButton');
 		
-		$forUser = Member::currentUser();
-		$cid = $this->request->param('ID');
-		$changeset = null;
-		if ($cid) {
-			$changeset = singleton('ChangesetService')->getChangeset($cid);
-		} else {
-			$changeset = singleton('ChangesetService')->getChangesetForUser();
-			if (!$changeset) {
-				// just get any one
-				$possibles = singleton('ChangesetService')->getAvailableChangesets();
-				if ($possibles) {
-					$changeset = $possibles->First();
-				}
-			}
-		}
-
-		$form = null;
-
-		if ($changeset) {
-			$tableFields = array(
-				"Title" => _t('Changesets.PAGE_TITLE', 'Title'),
-				'ClassName' => _t('Changesets.CONTENT_TYPE', 'Type'),
-				"LastEdited" => _t('Changesets.LAST_EDITED', 'Last Edited'),
-				'ChangeType' => _t('Changesets.CHANGE_TYPE', 'Type of Change')
-			);
-
-			$popupFields = new FieldSet(
-							new TextField('Name', _t('CommentAdmin.NAME', 'Name')),
-							new TextField('CommenterURL', _t('CommentAdmin.COMMENTERURL', 'URL'))
-			);
-
-			$idField = new HiddenField('ID', '', $changeset->ID);
-
-			$table = new ComplexTableField($this, "Changes", "SiteTree", $tableFields);
-			$table->setParentClass(false);
-			$table->setFieldCasting(array(
-				'LastEdited' => 'SSDatetime->Nice',
-			));
-
-			$items = $changeset->getItems();
-			$table->setCustomSourceItems($items);
-			$table->pageSize = $items->Count();
-			$fields = new FieldSet(
-							new TabSet('Root',
-									new Tab(_t('Changesets.CHANGESETS', 'Changesets'),
-											new LiteralField("Title", $changeset->Title . ' (' . $changeset->Owner()->Email . ')'),
-											$idField,
-											$table
-									)
-							)
-			);
-
-			$actions = new FieldSet();
-
-			$actions->push(new FormAction('submitall', _t('Changesets.SUBMIT_ALL', 'Submit All Changes')));
-			$actions->push(new FormAction('revertall', _t('Changesets.REVERT_ALL', 'Revert All Changes')));
-
-			$form = new Form($this, "EditForm", $fields, $actions);
-		}
-
+		$grid->setList($this->changesetService->getAvailableChangesets());
+		
+		$config->getComponentByType('GridFieldDetailForm')->setItemEditFormCallback(function ($form, $itemRequest) {
+			$actions = new FieldList();
+			$actions->push(FormAction::create('submitall', 'Submit all'));
+			$actions->push(FormAction::create('revertall', 'Revert all'));
+			$form->setActions($actions);
+		});
+		
+		$config->getComponentByType('GridFieldDetailForm')->setItemRequestClass('ChangesetDetail_ItemRequest');
+		
 		return $form;
 	}
 
@@ -160,4 +117,13 @@ class ChangesetsAdmin extends ModelAdmin {
 		return FormResponse::respond();
 	}
 
+}
+
+class ChangesetDetail_ItemRequest extends GridFieldDetailForm_ItemRequest {
+	public function submitall($data, $form) {
+		$changeset = $this->record;
+		$changeset->submit();
+		
+		
+	}
 }

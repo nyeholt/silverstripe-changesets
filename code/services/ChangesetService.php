@@ -98,7 +98,7 @@ class ChangesetService {
 
 		$filter = null;
 
-		if ($member->HasPerm('ADMIN')) {
+		if (Permission::checkMember($member, 'ADMIN')) {
 			$filter = array(
 				'Status' => 'Active',
 			);
@@ -130,33 +130,6 @@ class ChangesetService {
 		$list = DataList::create('ContentChangeset');
 		$list = $list->filter($filter);
 		
-		$items = $list->toArray();
-		
 		return $list->first();
-//		
-//		$query = new SQLQuery();
-//
-//		$query->from('ContentChangeset')
-//				->innerJoin('ContentChangesetItem', '"ContentChangeset"."ID" = "ChangesetID"')
-//				->where($filter);
-//
-//		$fields = DataObject::database_fields('ContentChangeset');
-//		$query->select = array('ID' => '"ContentChangeset"."ID"');
-//		foreach ($fields as $k => $v) {
-//			$query->select[$k] = "\"ContentChangeset\".\"$k\"";
-//		}
-//
-//		$raw = $query->execute();
-//
-//
-//		$result = $object->buildDataObjectSet($query->execute(), 'DataObjectSet', $query, 'ContentChangeset');
-//		$str = $query->sql();
-//
-//		if ($result) {
-//			return $result->First();
-//		}
 	}
-
 }
-
-?>

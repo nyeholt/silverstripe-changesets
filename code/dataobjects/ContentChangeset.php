@@ -35,6 +35,24 @@ class ContentChangeset extends DataObject {
 	 * @var ChangesetService
 	 */
 	public $changesetService;
+	
+	public function getCMSFields() {
+		$fields = parent::getCMSFields();
+		
+		$grid = $fields->dataFieldByName('ChangesetItems');
+		
+		$fields = FieldList::create();
+		$fields->push($grid);
+		
+		$config = GridFieldConfig_Base::create(50);
+		$grid->setConfig($config);
+		
+		
+		
+		$config->addComponent(new GridFieldViewCMSButton());
+		
+		return $fields;
+	}
 
 	/**
 	 * We want to first get all our changesetitems and retrieve the objects for those
