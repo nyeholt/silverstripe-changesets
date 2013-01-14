@@ -59,9 +59,36 @@ class ChangesetsAdmin extends ModelAdmin {
 		
 		$config->getComponentByType('GridFieldDetailForm')->setItemEditFormCallback(function ($form, $itemRequest) {
 			$actions = new FieldList();
-			$actions->push(FormAction::create('submitall', 'Submit all'));
-			$actions->push(FormAction::create('revertall', 'Revert all'));
+			
+			$record = $form->getRecord();
+			if ($record->Status == 'Active') {
+				$actions->push(FormAction::create('submitall', 'Submit all')
+						->setUseButtonTag(true)
+						->addExtraClass('ss-ui-action-constructive'));
+
+				$actions->push(FormAction::create('revertall', 'Revert all')
+						->setUseButtonTag(true)
+						->addExtraClass('ss-ui-action-destructive'));
+
+				$curmbs = $itemRequest->Breadcrumbs();
+				if($curmbs && $curmbs->count()>=2){
+					$one_level_up = $curmbs->offsetGet($curmbs->count()-2);
+					$text = sprintf(
+						"<a class=\"%s\" href=\"%s\">%s</a>",
+						"crumb ss-ui-button ss-ui-action-destructive cms-panel-link ui-corner-all", // CSS classes
+						$one_level_up->Link, // url
+						_t('GridFieldDetailForm.CancelBtn', 'Cancel') // label
+					);
+					$actions->push(new LiteralField('cancelbutton', $text));
+				}
+			} else if ($record->Status == 'Published') {
+				$actions->push(FormAction::create('push', 'Deploy changes')
+						->setUseButtonTag(true)
+						->addExtraClass('ss-ui-action-constructive'));
+			}
+			
 			$form->setActions($actions);
+			
 		});
 		
 		$config->getComponentByType('GridFieldDetailForm')->setItemRequestClass('ChangesetDetail_ItemRequest');
@@ -69,62 +96,31 @@ class ChangesetsAdmin extends ModelAdmin {
 		return $form;
 	}
 
-	/**
-	 * Gets the changes for a particular user
-	 */
-	public function showchangeset() {
-		return $this->renderWith('ChangesetsAdmin_right');
-	}
-
-	/**
-	 * Submits all the items in the currently selected changeset
-	 */
-	public function submitall($params = null, $form = null) {
-		$cid = isset($params['ID']) ? $params['ID'] : null;
-		$changeset = null;
-		if (!$cid) {
-			throw new Exception("Invalid Changeset");
-		}
-
-		$changeset = singleton('ChangesetService')->getChangeset($cid);
-		if ($changeset) {
-			$changeset->submit();
-			FormResponse::status_message(sprintf(_t('Changesets.SUBMITTED_CHANGESET', 'Submitted content in changeset %s'), $changeset->Title), 'good');
-		} else {
-			FormResponse::status_message(sprintf(_t('Changesets.CHANGESET_NOT_FOUND', 'Could not find changeset')), 'bad');
-		}
-		
-		return $this->redirect($this->Link());
-	}
-
-	/**
-	 * Revert all edits for a particular changeset
-	 */
-	public function revertall($params = null, $form = null) {
-		$cid = isset($params['ID']) ? $params['ID'] : null;
-		$changeset = null;
-		if (!$cid) {
-			throw new Exception("Invalid Changeset");
-		}
-
-		$changeset = singleton('ChangesetService')->getChangeset($cid);
-		if ($changeset) {
-			$changeset->revertAll();
-			FormResponse::status_message(sprintf(_t('Changesets.REVERTED_ALL', 'Reverted content in changeset %s'), $changeset->Title), 'good');
-		} else {
-			FormResponse::status_message(sprintf(_t('Changesets.CHANGESET_NOT_FOUND', 'Could not find changeset')), 'bad');
-		}
-
-		return $this->redirect($this->Link());
-	}
-
 }
 
 class ChangesetDetail_ItemRequest extends GridFieldDetailForm_ItemRequest {
-	public function submitall($data, $form) {
+	public function submitall($data, Form $form) {
 		$changeset = $this->record;
 		$changeset->submit();
+		$controller = $form->getController()->getTopLevelController();
+		$noActionURL = $controller->removeAction($data['url']);
+		$controller->getRequest()->addHeader('X-Pjax', 'Content'); 
 		
-		
+		return $controller->redirect($noActionURL, 302); 
+	}
+	
+	public function revertall($data, Form $form) {
+		$changeset = $this->record;
+		$changeset->revertAll();
+		$controller = $form->getController()->getTopLevelController();
+		$noActionURL = $controller->removeAction($data['url']);
+		$controller->getRequest()->addHeader('X-Pjax', 'Content'); 
+		return $controller->redirect($noActionURL, 302); 
+	}
+	
+	public function push($data, Form $form) {
+		$controller = $form->getController()->getTopLevelController();
+		$controller->getRequest()->addHeader('X-Pjax', 'Content'); 
+		return $controller->redirect($noActionURL, 302); 
 	}
 }
