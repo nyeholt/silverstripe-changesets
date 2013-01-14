@@ -87,7 +87,7 @@ class ChangesetService {
 	 *
 	 * @param Member $member
 	 */
-	public function getAvailableChangesets($member = null) {
+	public function getAvailableChangesets($member = null, $status = 'Active') {
 		if (!$member) {
 			$member = Member::currentUser();
 		}
@@ -100,11 +100,11 @@ class ChangesetService {
 
 		if (Permission::checkMember($member, 'ADMIN')) {
 			$filter = array(
-				'Status' => 'Active',
+				'Status' => $status,
 			);
 		} else {
 			$filter = array(
-				'Status' => 'Active',
+				'Status' => $status,
 				'OwnerID' => $member->ID,
 			);
 		}

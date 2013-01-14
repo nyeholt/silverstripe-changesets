@@ -54,7 +54,8 @@ class ChangesetsAdmin extends ModelAdmin {
 		$config->removeComponentsByType('GridFieldExportButton');
 		$config->removeComponentsByType('GridFieldPrintButton');
 		
-		$grid->setList($this->changesetService->getAvailableChangesets());
+		
+		// $grid->setList($this->changesetService->getAvailableChangesets());
 		
 		$config->getComponentByType('GridFieldDetailForm')->setItemEditFormCallback(function ($form, $itemRequest) {
 			$actions = new FieldList();
@@ -92,8 +93,8 @@ class ChangesetsAdmin extends ModelAdmin {
 		} else {
 			FormResponse::status_message(sprintf(_t('Changesets.CHANGESET_NOT_FOUND', 'Could not find changeset')), 'bad');
 		}
-
-		return FormResponse::respond();
+		
+		return $this->redirect($this->Link());
 	}
 
 	/**
@@ -114,7 +115,7 @@ class ChangesetsAdmin extends ModelAdmin {
 			FormResponse::status_message(sprintf(_t('Changesets.CHANGESET_NOT_FOUND', 'Could not find changeset')), 'bad');
 		}
 
-		return FormResponse::respond();
+		return $this->redirect($this->Link());
 	}
 
 }

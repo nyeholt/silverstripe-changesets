@@ -8,6 +8,7 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
     public static $db = array(
 		'OtherID' => 'Int',
 		'OtherClass' => 'Varchar(32)',
+		'ContentVersion'	=> 'Int',		// the version of the item at the point of publication
 	);
 
 	public static $has_one = array(
@@ -15,18 +16,34 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
 	);
 	
 	public static $summary_fields = array(
-		'DisplayLabel' => 'Title',
-		'getRealItem.LastEdited' => 'Last Edited',
+		'DisplayLabel'				=> 'Title',
+		'getRealItem.LastEdited'	=> 'Last Edited',
+		'getRealItem.getChangeType' => 'Change Type',
+		'ContentVersion'			=> 'Published Version',
+		'getRealItem.Version'		=> 'Current Version',
 	);
 
 	public function getRealItem() {
-		return DataObject::get_by_id($this->OtherClass, $this->OtherID);
+		$item = DataObject::get_by_id($this->OtherClass, $this->OtherID);
+		if (!$item) {
+			$item = ArrayData::create(array(
+				'ID'		=> $this->OtherID,
+				'ClassName'	=> $this->OtherClass,
+				'Title'		=> 'deleted',
+				'LastEdited' => 'deleted',
+				'getChangeType' => 'deleted',
+				'Version' => 'deleted'
+			));
+		}
+		return $item;
 	}
 	
 	public function DisplayLabel() {
 		$item = $this->getRealItem();
-		
-		return sprintf('%s (%s #%s)', $item->Title, $item->ID, $item->ClassName);
+		if ($item) {
+			return sprintf('%s (%s #%s)', $item->Title, $item->ClassName, $item->ID);
+		}
+		return 'missing';
 	}
 
 	public function CMSEditLink() {
@@ -44,14 +61,14 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
 	}
 
 	public function canView($member = null) {
-		return $this->getRealItem()->canView($member);
+		return $this->Changeset()->canView($member);
 	}
 	
 	public function canEdit($member = null) {
-		return $this->getRealItem()->canEdit($member);
+		return $this->Changeset()->canEdit($member);
 	}
 	
 	public function canDelete($member = null) {
-		return $this->getRealItem()->canDelete($member);
+		return $this->Changeset()->canDelete($member);
 	}
 }

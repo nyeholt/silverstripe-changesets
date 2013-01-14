@@ -27,6 +27,12 @@ class ContentChangeset extends DataObject {
 		'ChangesetItems' => 'ContentChangesetItem',
 	);
 	
+	public static $default_sort = 'LastEdited DESC';
+	
+	public static $summary_fields = array(
+		'Title', 'Status', 'PublishedDate',
+	);
+	
 	public static $dependencies = array(
 		'changesetService' => '%$ChangesetService',
 	);
@@ -91,12 +97,6 @@ class ContentChangeset extends DataObject {
 	 * @param ContentChangesetItem $object
 	 */
 	public function changesetItemFor($object) {
-		$filter = singleton('ChangesetUtils')->quote(array(
-			'OtherID =' => $object->ID,
-			'OtherClass =' => $object->class,
-			'ChangesetID =' => $this->ID,
-				));
-
 		$filter = array(
 			'OtherID'		=> $object->ID,
 			'OtherClass'	=> $object->class,
@@ -220,5 +220,22 @@ class ContentChangeset extends DataObject {
 
 	public function lock() {
 		$this->LockType = 'Exclusive';
+	}
+	
+	public function canView($member = null) {
+		if (!$member) {
+			$member = Member::currentUser();
+		}
+		return $member->ID == $this->OwnerID || Permission::check('ADMIN');
+	}
+	
+	public function canEdit($member = null) {
+		
+		return parent::canEdit($member);
+	}
+	
+	public function canDelete($member = null) {
+		
+		return parent::canDelete($member);
 	}
 }
