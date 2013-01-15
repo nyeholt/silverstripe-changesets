@@ -53,8 +53,6 @@ class ContentChangeset extends DataObject {
 		$config = GridFieldConfig_Base::create(50);
 		$grid->setConfig($config);
 		
-		
-		
 		$config->addComponent(new GridFieldViewCMSButton());
 		
 		return $fields;
@@ -73,7 +71,7 @@ class ContentChangeset extends DataObject {
 			// on either area (eg unpublish changes etc)
 			Versioned::reading_stage('Stage');
 			$item = $record->getRealItem();
-			if ($item && $item->ID) {
+			if ($item && $item->ID && !($item instanceof ArrayData)) {
 				$items->push($item);
 				// have the object, don't need the additional check
 				continue;
@@ -81,7 +79,7 @@ class ContentChangeset extends DataObject {
 
 			Versioned::reading_stage('Live');
 			$item = $record->getRealItem();
-			if ($item && $item->ID) {
+			if ($item && $item->ID && !($item instanceof ArrayData)) {
 				$items->push($item);
 			}
 		}
@@ -138,6 +136,10 @@ class ContentChangeset extends DataObject {
 		$change->OtherID = $object->ID;
 		$change->OtherClass = $object->class;
 		$change->ChangesetID = $this->ID;
+		$change->ChangeType = $object->getChangeType();
+		if ($object->ContentID) {
+			$change->OtherContentID = $object->ContentID;
+		}
 		$change->write();
 	}
 
@@ -181,7 +183,8 @@ class ContentChangeset extends DataObject {
 		$items = $this->getItems();
 		foreach ($items as $item) {
 			$item->setPublishingViaChangeset();
-			switch ($item->getChangeType()) {
+			$changeType = $item->getChangeType();
+			switch ($changeType) {
 				case "Draft Deleted": {
 						$item->doUnpublish();
 						break;
@@ -195,6 +198,14 @@ class ContentChangeset extends DataObject {
 						$item->doPublish();
 					}
 			}
+
+			// mark the ChangesetItem that this thing currently belongs to with the relevant content version
+			// for later reference
+			// find the relevant changeset item
+			$changesetItem = $this->changesetItemFor($item);
+			$changesetItem->ContentVersion = $item->Version;
+			$changesetItem->ChangeType = $changeType;
+			$changesetItem->write();
 		}
 
 		$this->Status = 'Published';

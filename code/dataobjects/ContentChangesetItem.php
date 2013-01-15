@@ -8,7 +8,9 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
     public static $db = array(
 		'OtherID' => 'Int',
 		'OtherClass' => 'Varchar(32)',
+		'OtherContentID'	=> 'Varchar(64)',
 		'ContentVersion'	=> 'Int',		// the version of the item at the point of publication
+		'ChangeType'		=> 'Varchar',
 	);
 
 	public static $has_one = array(
@@ -18,7 +20,7 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
 	public static $summary_fields = array(
 		'DisplayLabel'				=> 'Title',
 		'getRealItem.LastEdited'	=> 'Last Edited',
-		'getRealItem.getChangeType' => 'Change Type',
+		'objectChangeType'			=> 'Change Type',
 		'ContentVersion'			=> 'Published Version',
 		'getRealItem.Version'		=> 'Current Version',
 	);
@@ -36,6 +38,13 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
 			));
 		}
 		return $item;
+	}
+	
+	public function objectChangeType() {
+		if (!$this->ChangeType) {
+			return $this->getRealItem()->getChangeType();
+		}
+		return $this->ChangeType;
 	}
 	
 	public function DisplayLabel() {

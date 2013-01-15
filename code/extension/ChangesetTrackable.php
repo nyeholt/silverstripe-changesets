@@ -223,15 +223,7 @@ class ChangesetTrackable extends DataExtension {
 				$changeset->remove($this->owner);
 			}
 		} else {
-			// mark the ChangesetItem that this thing currently belongs to with the relevant content version
-			// for later reference
-			$changeset = $this->owner->getCurrentChangeset();
-			if ($changeset) {
-				// find the relevant changeset item
-				$item = $changeset->changesetItemFor($this->owner);
-				$item->ContentVersion = $this->owner->Version;
-				$item->write();
-			}
+			
 		}
 	}
 

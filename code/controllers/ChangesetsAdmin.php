@@ -99,6 +99,13 @@ class ChangesetsAdmin extends ModelAdmin {
 }
 
 class ChangesetDetail_ItemRequest extends GridFieldDetailForm_ItemRequest {
+	public static $dependencies = array('syncrotronService' => '%$SyncrotronService');
+	
+	/**
+	 * @var SyncrotronService
+	 */
+	public $syncrotronService;
+	
 	public function submitall($data, Form $form) {
 		$changeset = $this->record;
 		$changeset->submit();
@@ -119,8 +126,13 @@ class ChangesetDetail_ItemRequest extends GridFieldDetailForm_ItemRequest {
 	}
 	
 	public function push($data, Form $form) {
+		
+		$node = DataList::create('RemoteSyncroNode')->first();
+
+		$this->syncrotronService->pushChangeset($this->record, $node);
+
 		$controller = $form->getController()->getTopLevelController();
 		$controller->getRequest()->addHeader('X-Pjax', 'Content'); 
-		return $controller->redirect($noActionURL, 302); 
+		return $controller->redirect($form->getController()->Link(), 302); 
 	}
 }
