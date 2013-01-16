@@ -82,6 +82,11 @@ class ChangesetsAdmin extends ModelAdmin {
 					$actions->push(new LiteralField('cancelbutton', $text));
 				}
 			} else if ($record->Status == 'Published') {
+				
+				$nodes = DataList::create('RemoteSyncroNode')->map();
+				
+				$form->Fields()->push(new DropdownField('TargetNode', 'Deploy to', $nodes));
+				
 				$actions->push(FormAction::create('push', 'Deploy changes')
 						->setUseButtonTag(true)
 						->addExtraClass('ss-ui-action-constructive'));
@@ -126,11 +131,14 @@ class ChangesetDetail_ItemRequest extends GridFieldDetailForm_ItemRequest {
 	}
 	
 	public function push($data, Form $form) {
+		$toNode = $data['TargetNode'];
+		if ($toNode) {
+			$node = DataList::create('RemoteSyncroNode')->byID($toNode);
+			if ($node) {
+				$this->syncrotronService->pushChangeset($this->record, $node);
+			}
+		}
 		
-		$node = DataList::create('RemoteSyncroNode')->first();
-
-		$this->syncrotronService->pushChangeset($this->record, $node);
-
 		$controller = $form->getController()->getTopLevelController();
 		$controller->getRequest()->addHeader('X-Pjax', 'Content'); 
 		return $controller->redirect($form->getController()->Link(), 302); 
