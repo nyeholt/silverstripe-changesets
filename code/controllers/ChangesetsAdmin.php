@@ -9,12 +9,13 @@ class ChangesetsAdmin extends ModelAdmin {
 	static $url_segment = 'changesets';
 	static $menu_title = 'Changes';
 	
-	public static $managed_models = array('ContentChangeset');
+	private static $managed_models = array('ContentChangeset');
 	
-	public static $allowed_actions = array(
+	private static $allowed_actions = array(
 		'showchangeset',
 		'submitall',
-		'revertall'
+		'revertall',
+		'EditForm',
 	);
 	
 	public static $dependencies = array(
