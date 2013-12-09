@@ -18,7 +18,7 @@ class ChangesetsAdmin extends ModelAdmin {
 		'EditForm',
 	);
 	
-	public static $dependencies = array(
+	private static $dependencies = array(
 		'changesetService' => '%$ChangesetService'
 	);
 
@@ -105,7 +105,7 @@ class ChangesetsAdmin extends ModelAdmin {
 }
 
 class ChangesetDetail_ItemRequest extends GridFieldDetailForm_ItemRequest {
-	public static $dependencies = array('syncrotronService' => '%$SyncrotronService');
+	private static $dependencies = array('syncrotronService' => '%$SyncrotronService');
 	
 	/**
 	 * @var SyncrotronService
