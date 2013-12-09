@@ -20,6 +20,7 @@ class ContentChangeset extends DataObject {
 		'PublishedDate' => 'SS_Datetime',
 		'LockType' => "Enum('Exclusive,Shared','Exclusive')" // whether a changeset is locked to a single user or not
 	);
+
 	public static $has_one = array(
 		'Owner' => 'Member',
 	);
@@ -55,6 +56,9 @@ class ContentChangeset extends DataObject {
 		
 		$config->addComponent(new GridFieldViewCMSButton());
 		
+		$invalidItems = $this->ChangesetItems()->filter('OtherID', '0');
+		// get rid of them
+		$invalidItems->removeAll();
 		return $fields;
 	}
 

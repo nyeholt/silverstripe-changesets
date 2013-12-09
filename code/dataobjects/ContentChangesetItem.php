@@ -26,6 +26,9 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
 	);
 
 	public function getRealItem() {
+		if (!$this->OtherClass || !$this->OtherID) {
+			return $this;
+		}
 		$item = DataObject::get_by_id($this->OtherClass, $this->OtherID);
 		if (!$item) {
 			$item = ArrayData::create(array(
