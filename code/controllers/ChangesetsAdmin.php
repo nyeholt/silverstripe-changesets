@@ -136,7 +136,10 @@ class ChangesetDetail_ItemRequest extends GridFieldDetailForm_ItemRequest {
 		if ($toNode) {
 			$node = DataList::create('RemoteSyncroNode')->byID($toNode);
 			if ($node) {
-				$this->syncrotronService->pushChangeset($this->record, $node);
+				$status = $this->syncrotronService->pushChangeset($this->record, $node);
+				if(is_array($status)) {
+					$form->sessionMessage($status[1], ($status[0] ? 'good' : 'bad'));
+				}
 			}
 		}
 		
