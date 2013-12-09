@@ -18,13 +18,14 @@ class GridFieldViewCMSButton implements GridField_ColumnProvider {
 	public function getColumnContent($field, $record, $col) {
 		if($record->canView()) {
 			$link = '';
+			$item = $record->getRealItem();
 			
-			if ($record instanceof CMSPreviewable) {
+			if ($item instanceof CMSPreviewable) {
 				$link = $record->CMSEditLink();
-			} else if ($record instanceof Folder) {
-				$link = Controller::join_links('admin/assets/show/', $record->ID);
-			} else if ($record instanceof File) {
-				$link = Controller::join_links('admin/assets/EditForm/field/File/item', $record->ID, 'edit');
+			} else if ($item instanceof Folder) {
+				$link = Controller::join_links('admin/assets/show/', $item->ID);
+			} else if ($item instanceof File) {
+				$link = Controller::join_links('admin/assets/EditForm/field/File/item', $item->ID, 'edit');
 			} 
 			
 			if ($link) {
