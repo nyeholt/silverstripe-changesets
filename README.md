@@ -9,7 +9,7 @@ Marcus Nyeholt
 ## Requirements
 
 * SilverStripe 3.1
-* Publishable
+* Versioned DataObjects
 
 ## Documentation
 

@@ -47,7 +47,7 @@ class ContentChangeset extends DataObject {
 		$fields = parent::getCMSFields();
 		
 		$grid = $fields->dataFieldByName('ChangesetItems');
-		
+
 		$fields = FieldList::create();
 		$fields->push($grid);
 		
@@ -59,6 +59,9 @@ class ContentChangeset extends DataObject {
 		$invalidItems = $this->ChangesetItems()->filter('OtherID', '0');
 		// get rid of them
 		$invalidItems->removeAll();
+		
+		$this->extend('updateCMSFields', $fields);
+		
 		return $fields;
 	}
 
@@ -144,6 +147,13 @@ class ContentChangeset extends DataObject {
 		if ($object->ContentID) {
 			$change->OtherContentID = $object->ContentID;
 		}
+		
+		// check if we've got workflow installed, and the item has a workflow applied. If so, we take its info
+		if ($object->WorkflowDefinitionID && $this->hasExtension('WorkflowApplicable')) {
+			$this->WorkflowDefinitionID = $object->WorkflowDefinitionID;
+			$this->write();
+		}
+		
 		$change->write();
 	}
 

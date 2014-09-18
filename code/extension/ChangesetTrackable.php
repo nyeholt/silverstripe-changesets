@@ -102,6 +102,7 @@ class ChangesetTrackable extends DataExtension {
 	 * @return String
 	 */
 	public function getChangeType() {
+
 		if ($this->owner->IsDeletedFromStage && $this->owner->ExistsOnLive) {
 			return "Draft Deleted";
 		}

@@ -32,8 +32,8 @@ class ChangesetsAdmin extends ModelAdmin {
 	 * Include required JS stuff
 	 */
 	public function init() {
+		Versioned::reading_stage('Stage');
 		parent::init();
-		Requirements::javascript('changesets/javascript/ChangesetAdmin.js');
 	}
 
 	/**
@@ -82,15 +82,24 @@ class ChangesetsAdmin extends ModelAdmin {
 					);
 					$actions->push(new LiteralField('cancelbutton', $text));
 				}
+				
+				$record->updateCMSActions($actions);
+				
 			} else if ($record->Status == 'Published') {
 				
 				$nodes = DataList::create('RemoteSyncroNode')->map();
 				
-				$form->Fields()->push(new DropdownField('TargetNode', 'Deploy to', $nodes));
-				
-				$actions->push(FormAction::create('push', 'Deploy changes')
+				if ($nodes->count()) {
+					$form->Fields()->insertBefore(new DropdownField('TargetNode', 'Deploy to', $nodes), 'ChangesetItems');
+					$actions->push(FormAction::create('push', 'Deploy changes')
 						->setUseButtonTag(true)
 						->addExtraClass('ss-ui-action-constructive'));
+				} else {
+					$form->Fields()->insertBefore(LiteralField::create('DeployNotice', '<strong>Create a Syncro node to deploy this changeset</strong>'), 'ChangesetItems');
+				}
+				
+				
+				
 			}
 			
 			$form->setActions($actions);
