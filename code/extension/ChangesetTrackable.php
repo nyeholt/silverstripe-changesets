@@ -2,16 +2,16 @@
 
 /**
  * An extension that makes an object's changes trackable in a changeset along with other content that
- * was changed at the same time. Objects must have the 'versionable' aspect applied. 
+ * was changed at the same time. Objects must have the 'versionable' aspect applied.
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
 class ChangesetTrackable extends DataExtension {
-	
+
 	public static $dependencies = array(
 		'changesetService' => '%$ChangesetService'
 	);
-	
+
 	/**
 	 * @var ContentChangeset
 	 */
@@ -30,7 +30,7 @@ class ChangesetTrackable extends DataExtension {
 	 */
 	protected $lockedBy = false;
 
-	
+
 	public function __construct() {
 		parent::__construct();
 	}
@@ -38,7 +38,7 @@ class ChangesetTrackable extends DataExtension {
 	 * An instance method that sets temporarily that this object can be published.
 	 *
 	 * This is called by the changeset service just before it calls 'doPublish'. If this flag isn't set
-	 * then the 'canPublish' check below will return false for this changeset. 
+	 * then the 'canPublish' check below will return false for this changeset.
 	 */
 	public function setPublishingViaChangeset($v = true) {
 		$this->publishingViaChangeset = $v;
@@ -169,7 +169,7 @@ class ChangesetTrackable extends DataExtension {
 
 	/**
 	 * Before content is published, lets see whether or not the item is the only piece of content in the current
-	 * changeset - if it is, then we'll let it go, otherwise we'll prevent publication. 
+	 * changeset - if it is, then we'll let it go, otherwise we'll prevent publication.
 	 */
 	public function canPublish() {
 		return $this->publishingViaChangeset;
@@ -213,10 +213,10 @@ class ChangesetTrackable extends DataExtension {
 	 *
 	 * If it is NOT true, it means that the publication happened
 	 * because of something else in the system that we couldn't control (eg an admin could publish). This is okay,
-	 * but we need to make sure that any active changeset for the object is cleaned up. 
+	 * but we need to make sure that any active changeset for the object is cleaned up.
 	 */
 	public function onAfterPublish() {
-		// calling the local canpublish, not the object one which checks if the user is admin... 
+		// calling the local canpublish, not the object one which checks if the user is admin...
 		if (!$this->publishingViaChangeset) {
 			$changeset = $this->owner->getCurrentChangeset();
 			if ($changeset) {
@@ -224,7 +224,7 @@ class ChangesetTrackable extends DataExtension {
 				$changeset->remove($this->owner);
 			}
 		} else {
-			
+
 		}
 	}
 

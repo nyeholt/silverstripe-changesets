@@ -8,7 +8,7 @@
  * user's current changeset (a new one is created if they don't have one). This allows items to be submitted all at once
  *
  * When an item is added to a changeset, a representative object (ContentChangesetItem) is added so that we can store
- * objects of any type in the changeset. 
+ * objects of any type in the changeset.
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
@@ -27,41 +27,41 @@ class ContentChangeset extends DataObject {
 	public static $has_many = array(
 		'ChangesetItems' => 'ContentChangesetItem',
 	);
-	
+
 	public static $default_sort = 'LastEdited DESC';
-	
+
 	public static $summary_fields = array(
 		'Title', 'Status', 'PublishedDate',
 	);
-	
+
 	public static $dependencies = array(
 		'changesetService' => '%$ChangesetService',
 	);
-	
+
 	/**
 	 * @var ChangesetService
 	 */
 	public $changesetService;
-	
+
 	public function getCMSFields() {
 		$fields = parent::getCMSFields();
-		
+
 		$grid = $fields->dataFieldByName('ChangesetItems');
 
 		$fields = FieldList::create();
 		$fields->push($grid);
-		
+
 		$config = GridFieldConfig_Base::create(50);
 		$grid->setConfig($config);
-		
+
 		$config->addComponent(new GridFieldViewCMSButton());
-		
+
 		$invalidItems = $this->ChangesetItems()->filter('OtherID', '0');
 		// get rid of them
 		$invalidItems->removeAll();
-		
+
 		$this->extend('updateCMSFields', $fields);
-		
+
 		return $fields;
 	}
 
@@ -115,7 +115,7 @@ class ContentChangeset extends DataObject {
 	 * Removes an item from a changeset. This typically occurs when a piece of content has been
 	 * forcibly published by an admin user. This is NOT the same as reverting the content - though the consequences
 	 * may be similar (ie the changeset is set to 'inactive'
-	 * 
+	 *
 	 * @param SiteTree $item
 	 */
 	public function remove($object) {
@@ -147,13 +147,13 @@ class ContentChangeset extends DataObject {
 		if ($object->ContentID) {
 			$change->OtherContentID = $object->ContentID;
 		}
-		
+
 		// check if we've got workflow installed, and the item has a workflow applied. If so, we take its info
 		if ($object->WorkflowDefinitionID && $this->hasExtension('WorkflowApplicable')) {
 			$this->WorkflowDefinitionID = $object->WorkflowDefinitionID;
 			$this->write();
 		}
-		
+
 		$change->write();
 	}
 
@@ -246,21 +246,21 @@ class ContentChangeset extends DataObject {
 	public function lock() {
 		$this->LockType = 'Exclusive';
 	}
-	
+
 	public function canView($member = null) {
 		if (!$member) {
 			$member = Member::currentUser();
 		}
 		return $member->ID == $this->OwnerID || Permission::check('ADMIN');
 	}
-	
+
 	public function canEdit($member = null) {
-		
+
 		return parent::canEdit($member);
 	}
-	
+
 	public function canDelete($member = null) {
-		
+
 		return parent::canDelete($member);
 	}
 }

@@ -8,7 +8,7 @@
  * @license BSD License http://www.silverstripe.org/bsd-license
  */
 class PublishableAdminExtension extends Extension {
-	
+
 	public function onBeforeInit() {
 		Versioned::reading_stage('Stage');
 	}

@@ -16,7 +16,7 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
 	public static $has_one = array(
 		'Changeset' => 'ContentChangeset',
 	);
-	
+
 	public static $summary_fields = array(
 		'DisplayLabel'				=> 'Title',
 		'getRealItem.LastEdited'	=> 'Last Edited',
@@ -42,14 +42,14 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
 		}
 		return $item;
 	}
-	
+
 	public function objectChangeType() {
 		if (!$this->ChangeType) {
 			return $this->getRealItem()->getChangeType();
 		}
 		return $this->ChangeType;
 	}
-	
+
 	public function DisplayLabel() {
 		$item = $this->getRealItem();
 		if ($item) {
@@ -75,11 +75,11 @@ class ContentChangesetItem extends DataObject implements CMSPreviewable {
 	public function canView($member = null) {
 		return $this->Changeset()->canView($member);
 	}
-	
+
 	public function canEdit($member = null) {
 		return $this->Changeset()->canEdit($member);
 	}
-	
+
 	public function canDelete($member = null) {
 		return $this->Changeset()->canDelete($member);
 	}

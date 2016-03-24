@@ -38,7 +38,7 @@ class TestChangesets extends SapphireTest
 	public function testCreateChangset() {
 
 		$this->logInWithPermission('CMS_ACCESS_CMSMain');
-		
+
 		// create some content and make a change. When saving, it should be added to the current user's
 		// active changeset
 		$obj = $this->objFromFixture('Page', 'home');
@@ -127,9 +127,9 @@ class TestChangesets extends SapphireTest
 		$this->logInWithPermission('ADMIN');
 		$obj->doPublish();
 		$this->assertEquals('Published', $obj->Status);
-		
+
 		$this->logInWithPermission('CMS_ACCESS_CMSMain');
-		
+
 		$obj->Title = "Not the homepage 2";
 		$obj->write();
 
@@ -167,7 +167,7 @@ class TestChangesets extends SapphireTest
 		$obj3->write();
 
 		$this->assertEquals(2, $cs->getItems()->Count());
-		
+
 		$cs->revertAll();
 		$this->assertEquals(0, $cs->getItems()->Count());
 	}
@@ -178,7 +178,7 @@ class TestChangesets extends SapphireTest
 		$obj = $this->objFromFixture('Page', 'home');
 		$obj->Title = "Not the homepage";
 		$obj->write();
-		
+
 		$obj->doPublish();
 
 		// should not be able to publish
