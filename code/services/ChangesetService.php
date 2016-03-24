@@ -4,12 +4,12 @@
  * A singletone service that manages changesets within the system.
  *
  * Use methods on this object to create and retrieve changesets, add new items to the current user's changeset,
- * move items between changesets, and submit changesets. 
+ * move items between changesets, and submit changesets.
  *
  * @author Marcus Nyeholt <marcus@silverstripe.com.au>
  */
 class ChangesetService {
-	
+
 	/**
 	 * Create a new changeset for the given member (the current user is used as the default)
 	 *
@@ -46,7 +46,7 @@ class ChangesetService {
 		if (!$member->HasPerm('ADMIN')) {
 			$filter['OwnerID'] = $member->ID;
 		}
-		
+
 		return DataList::create('ContentChangeset')->filter($filter)->first();
 	}
 
@@ -129,7 +129,7 @@ class ChangesetService {
 
 		$list = DataList::create('ContentChangeset');
 		$list = $list->filter($filter);
-		
+
 		return $list->first();
 	}
 }

@@ -60,11 +60,11 @@ class PublishableObject extends Versioned {
 	}
 
 	public function onBeforePublish($original) {
-		
+
 	}
 
 	public function onAfterPublish($original) {
-		
+
 	}
 
 	/**
